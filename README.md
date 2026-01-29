@@ -6,7 +6,7 @@
 
 ## What is this?
 
-When you use AI coding tools like [Cursor](https://cursor.sh/), they don't know anything about Domo's APIs. This repo gives them that knowledge.
+When you use AI coding tools like [Cursor](https://cursor.sh/) or [Claude Code] (https://claude.ai), they don't know anything about Domo's APIs. This repo gives them that knowledge.
 
 **The problem:** You prototype an app in Google AI Studio or Lovable, then move it to your local machine to continue development. But now your AI assistant doesn't know how to:
 - Connect to Domo datasets
@@ -21,7 +21,7 @@ When you use AI coding tools like [Cursor](https://cursor.sh/), they don't know 
 
 ## Who is this for?
 
-This is for anyone who hasn't yet started crafting their own Cursor rules. It's a solid starting point that makes it much more likely the AI will generate code that correctly integrates with Domo's APIs — saving you time debugging and fixing hallucinated code.
+This is for anyone who hasn't yet started crafting their own Cursor or Claude Code rules. It's a solid starting point that makes it much more likely the AI will generate code that correctly integrates with Domo's APIs — saving you time debugging and fixing hallucinated code.
 
 ---
 
@@ -43,13 +43,15 @@ This gives Claude Code the core Domo App Platform knowledge.
 
 ### Step 2: Add API-specific files as needed
 
-When working on specific features, **add the relevant .md file to your chat context**:
+When working on specific features beyond the Domo App Platform, **add the relevant .md file to your chat context**:
 
 - Need to query datasets? → Add `domo-data-api.md` to context
 - Need to store app data? → Add `domo-appdb.md` to context
 - Need AI features? → Add `domo-ai-endpoints.md` to context
 - Need Code Engine? → Add `domo-code-engine.md` to context
 - Need Workflows? → Add `domo-workflow.md` to context
+- Migrating from Google AI Studio? → Add `google-ai-studio-to-domo.md` to context
+- Building custom connectors? → Add `domo-custom-connector-ide.md` to context
 
 **You don't need to copy content from these files into CLAUDE.md** - just add the specific file to your conversation when you need it. This keeps context lean and focused.
 
