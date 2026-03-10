@@ -23,7 +23,7 @@ import {
 
 ## Response Wrapper
 
-All toolkit methods return a response wrapper:
+Most toolkit methods return a response wrapper:
 
 ```typescript
 interface ToolkitResponse<T> {
@@ -36,6 +36,13 @@ interface ToolkitResponse<T> {
 const response = await IdentityClient.get();
 const user = response.body;  // Access the data
 const status = response.status;
+```
+
+**Exception:** `AIClient` often returns payload under `response.data`. Handle AI responses with:
+
+```typescript
+const body = response.data || response.body || response;
+const output = body.output || body.choices?.[0]?.output;
 ```
 
 ## AppDBClient - NoSQL Document Store

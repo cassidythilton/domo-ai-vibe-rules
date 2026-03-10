@@ -36,13 +36,16 @@
    - Use Query endpoint (`/data/v1/`) for dashboard-embedded apps
    - SQL endpoint requires manual filter handling
 
-6. **AI responses are in choices array**
+6. **AIClient response shape can vary (`data` vs `body`)**
+   - For toolkit `AIClient`, payload is often under `response.data`.
+   - Safest parse order: `response.data || response.body || response`.
    ```typescript
    // ✅ Correct
-   const text = response.choices[0].output;
-   
+   const body = response.data || response.body || response;
+   const text = body.output || body.choices?.[0]?.output;
+
    // ❌ Wrong
-   const text = response.output;
+   const text = response.body.output;
    ```
 
 7. **Strip base64 data URL prefix for image-to-text**

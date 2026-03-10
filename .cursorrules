@@ -13,7 +13,14 @@
 - `08-routing-config.mdc` - Routing and Vite config
 - `09-gotchas.mdc` - Common gotchas and troubleshooting
 
-This file is kept for backward compatibility but will not be updated.
+This file is kept for backward compatibility only.
+
+Canonical source of truth:
+- `.cursor/rules/*.mdc` files
+- toolkit/query-first API guidance
+
+Legacy endpoint-first docs are archived in:
+- `archive/legacy-rules/*.md`
 
 ---
 
@@ -1476,13 +1483,16 @@ import { HashRouter } from 'react-router-dom';
    - Use Query endpoint (`/data/v1/`) for dashboard-embedded apps
    - SQL endpoint requires manual filter handling
 
-6. **AI responses are in choices array**
+6. **AIClient response shape can vary (`data` vs `body`)**
+   - For toolkit `AIClient`, payload is often under `response.data`.
+   - Safest parse order: `response.data || response.body || response`.
    ```typescript
    // ✅ Correct
-   const text = response.choices[0].output;
+   const body = response.data || response.body || response;
+   const text = body.output || body.choices?.[0]?.output;
    
    // ❌ Wrong
-   const text = response.output;
+   const text = response.body.output;
    ```
 
 7. **Strip base64 data URL prefix for image-to-text**

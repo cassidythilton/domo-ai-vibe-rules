@@ -64,35 +64,37 @@ See the table in `CLAUDE.md` for a complete guide on when to include each file.
 ### Step 1: Download the rules
 
 Download these files from this repo:
-- `.cursorrules` — The main rules file (or copy content into a `.mdc` file)
-- Any API-specific files you need (like `domo-data-api.md`)
+- `.cursor/rules/*.mdc` — Canonical rules (recommended)
+- `CLAUDE.md` — Claude-oriented entrypoint
+- `.cursorrules` — Backward compatibility only (deprecated)
 
 ### Step 2: Add to your project
 
-**Option A: Simple approach**
+**Option A: Recommended approach**
 
-Put `.cursorrules` in your project's **root folder**:
-
-```
-my-domo-app/
-├── .cursorrules     ← Put it here
-├── public/
-├── src/
-└── ...
-```
-
-**Option B: Using Cursor's rules folder (recommended)**
-
-Create a `.cursor/rules/` folder and add rules as `.mdc` files:
+Create `.cursor/rules/` in your project and copy the modular rule files:
 
 ```
 my-domo-app/
 ├── .cursor/
 │   └── rules/
-│       ├── domo-app-platform.mdc    ← Main rules (set to "Always")
-│       ├── domo-data-api.mdc        ← Set to "Agent-decided"
-│       ├── domo-appdb.mdc           ← Set to "Agent-decided"
+│       ├── 01-overview.mdc
+│       ├── 02-ryuu-js.mdc
+│       ├── 03-query.mdc
+│       ├── 04-toolkit.mdc
 │       └── ...
+├── public/
+├── src/
+└── ...
+```
+
+**Option B: Backward compatibility**
+
+If needed for legacy setup, place `.cursorrules` in your project root:
+
+```
+my-domo-app/
+├── .cursorrules     ← Backward compatibility only
 ├── public/
 ├── src/
 └── ...
@@ -104,8 +106,8 @@ This is important for keeping AI responses accurate:
 
 | Rule | Setting | Why |
 |:-----|:--------|:----|
-| **Main rules** (domo-app-platform) | **Always** | Core Domo knowledge should always be available |
-| **API-specific rules** (data, appdb, etc.) | **Agent-decided** | Only inject when relevant to avoid context pollution |
+| **`01-overview.mdc`** | **Always** | Core Domo platform constraints and architecture |
+| **API modules** (`03-query.mdc`, `04-toolkit.mdc`, etc.) | **Agent-decided** | Keep context focused and avoid contradictory guidance |
 
 > **Why does this matter?** If you inject AppDB documentation into context when your app doesn't use AppDB, you're adding irrelevant information. This ambiguity is when AI starts to hallucinate — it might suggest using AppDB when you don't need it.
 
@@ -150,22 +152,25 @@ Lovable sometimes generates projects with **server-side rendering (SSR)**. This 
 
 | File | What it's for |
 |:-----|:--------------|
-| **`.cursorrules`** | Copy this to your project for Cursor |
+| **`.cursor/rules/*.mdc`** | Canonical Cursor rules (recommended) |
+| **`.cursorrules`** | Deprecated compatibility file |
 | **`CLAUDE.md`** | Copy this to your project for Claude Code |
 
 ### API Reference Files
 
 **For Claude Code users:** Add these files to your chat context when needed (don't copy into CLAUDE.md)
 
-**For Cursor users:** Copy content into your `.cursorrules` or add as separate `.mdc` files
+**For Cursor users:** use `.cursor/rules/*.mdc` as canonical.
 
 | File | When you need it |
 |:-----|:-----------------|
-| `domo-data-api.md` | Querying Domo datasets |
-| `domo-appdb.md` | Storing data in collections |
-| `domo-ai-endpoints.md` | AI text generation, image-to-text |
-| `domo-code-engine.md` | Running server-side code |
-| `domo-workflow.md` | Triggering Domo workflows |
+| `domo-data-api.md` | Toolkit/query-first data access reference |
+| `domo-appdb.md` | Toolkit-first AppDB reference |
+| `domo-ai-endpoints.md` | Toolkit-first AI reference |
+| `domo-code-engine.md` | Toolkit-first Code Engine reference |
+| `domo-workflow.md` | Toolkit-first Workflow reference |
+
+Legacy endpoint-first versions of these docs are preserved under `archive/legacy-rules/`.
 
 ### Other Files
 
@@ -177,13 +182,13 @@ Lovable sometimes generates projects with **server-side rendering (SSR)**. This 
 
 ## ⚠️ Important Note About Cursor
 
-Cursor's rules system has changed several times in the past year. As of now:
+Cursor's rules system has changed several times in the past year. Current recommendation:
 
-- **`.cursorrules`** — Still works, but may be deprecated in the future
-- **`.cursor/rules/`** — Newer approach using `.mdc` files
-- **`AGENTS.md`** — Another alternative
+- **`.cursor/rules/`** — Canonical approach using modular `.mdc` files
+- **`.cursorrules`** — Deprecated compatibility only
+- **`AGENTS.md`** — Alternate format depending on workflow
 
-**Our recommendation:** Start with `.cursorrules` — it's the simplest. If it stops working, check [Cursor's official docs](https://cursor.com/docs/context/rules) for the latest approach.
+**Our recommendation:** Start with `.cursor/rules/*.mdc`. Use `.cursorrules` only for backward compatibility.
 
 ---
 
@@ -213,11 +218,11 @@ These are the official docs for each API (as of January 2026):
 
 ## 💡 Tips for Success
 
-1. **Start simple** — Just copy `.cursorrules` to start. Add API-specific rules only when you need them.
+1. **Use canonical modules** — Start with `01-overview.mdc`, then add API modules as needed.
 
 2. **Add project-specific notes** — There's a section at the bottom of the rules file for your own notes. Use it!
 
-3. **Keep the AI focused** — If the AI suggests using a "Domo SDK" or "Domo npm package" that doesn't exist, remind it to use `ryuu.js` and the APIs in your rules.
+3. **Keep the AI focused** — Prefer `@domoinc/query` + `@domoinc/toolkit` patterns. Use raw endpoint calls only as explicit fallback.
 
 4. **Don't forget `thumbnail.png`** — Every Domo app needs a `thumbnail.png` file alongside the `manifest.json`.
 
