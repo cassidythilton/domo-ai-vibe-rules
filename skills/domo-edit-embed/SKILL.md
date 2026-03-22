@@ -1,68 +1,41 @@
 ---
 name: domo-edit-embed
-description: Use this skill when a user wants to set up Domo's embedded edit experience, allowing external users to create, edit, save, and share Domo content (dashboards, cards, alerts, reports) through an embedded interface. Covers the Domo Identity Broker, JWT authentication for edit mode, role-based access (Admin, Privileged, Editor, Participant), instance mapping with user attributes, and the full server-side flow for generating edit URLs. Trigger whenever someone needs to embed Domo in edit mode (not just read-only), configure the Identity Broker, set up JWT tokens for Domo edit access, map external users to Domo instances, assign Domo roles for embedded editing, or enable external users to build and modify Domo content. Do NOT trigger for read-only embedding with programmatic filters (use domo-programmatic-filters), client-side runtime filtering (use domo-client-filters), creating embed IDs, or Domo SSO for internal users.
+description: Set up Domo's embedded edit experience — external users create, edit, save, and share Domo content via an embedded iframe. Covers Identity Broker, JWT auth, role-based access (Admin/Privileged/Editor/Participant), instance mapping, and edit URL generation. Use for any Domo edit-mode embedding. Not for read-only embeds (use domo-programmatic-filters) or client-side filtering (use domo-jsapi-filters).
 ---
 
 # Domo Embedded Edit Experience
 
-The embedded edit experience lets external users create, edit, save, and share Domo content through an embedded interface in your application. Unlike read-only embeds (which use embed tokens and programmatic filters), edit embeds authenticate users through the **Domo Identity Broker** using JWT tokens, giving them a role-based Domo session where they can build dashboards, create alerts, schedule reports, connect data sources, and transform data.
+Let external users create, edit, save, and share Domo content (dashboards, cards, alerts, reports, data sources) through an embedded iframe. Uses the **Domo Identity Broker** with JWT auth — fundamentally different from read-only embeds.
 
-Use this when you want external customers or partners to:
-
-- Build and modify their own dashboards and cards
-- Create alerts and scheduled reports
-- Connect and transform data sources
-- Collaborate on content within their scoped environment
-
-For read-only embedded viewing with data filtering, see `domo-programmatic-filters`. For client-side runtime filtering, see `domo-client-filters`.
+For read-only embeds, see `domo-programmatic-filters`. For client-side filtering, see `domo-jsapi-filters`.
 
 ## How It Works
 
-The edit embed flow is fundamentally different from read-only embeds:
+1. Your server authenticates the user and creates a **JWT** with identity, role, and routing attributes
+2. JWT is signed with a shared secret from Domo
+3. Server constructs edit URL: `{IDP_URL}/jwt?token={jwt_token}`
+4. Client renders URL directly as iframe `src` (no POST form needed)
+5. **Identity Broker** validates JWT, routes user to correct Domo instance by role
 
-1. Your server authenticates the user against your own system
-2. Your server creates a **JWT token** containing the user's identity, role, and routing attributes
-3. The JWT is signed with a shared secret provided by Domo
-4. Your server constructs an edit URL: `{IDP_URL}/jwt?token={jwt_token}`
-5. The client renders this URL directly in an iframe — no POST form submission needed
-6. The **Domo Identity Broker** validates the JWT, maps the user to the correct Domo instance, and grants access based on their role
-
-The key difference: read-only embeds use OAuth client credentials → embed token → POST form. Edit embeds use JWT → Identity Broker URL → direct iframe src.
+Key difference: read-only = OAuth → embed token → POST form. Edit = JWT → Identity Broker URL → iframe src.
 
 ## Prerequisites
 
-Before implementing edit embeds, you need to work with your Domo CSM (Customer Success Manager) to set up:
+Work with your Domo CSM to set up the Identity Broker. Provide: your Domo instance URL, auth method (JWT), routing attribute key, and attribute-to-instance mappings.
 
-1. **Identity Broker configuration** — Provide your CSM with:
-   - Your Domo instance URL
-   - Your preferred authentication method (JWT is most common)
-   - The user attribute key you'll use for routing (e.g., `customer`, `keyAttribute`)
-   - Attribute-to-account mappings (which attribute values map to which Domo instances)
+You receive: Identity Broker URL, JWT signing secret (UUID), and attribute key config.
 
-2. **In return, you receive:**
-   - The Identity Broker URL (e.g., `https://yourcompany.identity.domo.com`)
-   - A JWT signing secret (UUID format)
-   - Configuration for the attribute key
-
-3. **Environment variables** your server needs:
-   - `IDP_URL` — The Identity Broker URL
-   - `JWT_SECRET` — The signing secret
-   - `KEY_ATTRIBUTE` — The attribute key name for instance routing
+**Required env vars:** `IDP_URL` (Broker URL), `JWT_SECRET` (signing secret), `KEY_ATTRIBUTE` (routing attribute name).
 
 ---
 
 ## The Domo Identity Broker
 
-The Identity Broker is the gateway that authenticates users and routes them to the correct Domo environment. It supports SAML2, OIDC, JWT, and OAuth2, but JWT is the most common for embedded edit experiences because it's simple and server-side.
-
-The broker does two things:
-
-1. **Authenticates** the user by validating the JWT signature against the shared secret
-2. **Routes** the user to the correct Domo instance based on the mapping attribute in the JWT payload
+Authenticates users (validates JWT signature) and routes them to the correct Domo instance based on the mapping attribute. Supports SAML2, OIDC, JWT, OAuth2 — JWT is most common for embeds.
 
 ### Instance Mapping
 
-Each value of your mapping attribute corresponds to a Domo instance (or a scoped environment within an instance). For example:
+Each mapping attribute value corresponds to a Domo instance:
 
 | Attribute Value | Domo Instance    |
 | --------------- | ---------------- |
@@ -70,15 +43,11 @@ Each value of your mapping attribute corresponds to a Domo instance (or a scoped
 | `globex`        | globex.domo.com  |
 | `initech`       | initech.domo.com |
 
-The mapping is configured on Domo's side (via your CSM) using either a webform dataset or an Excel sheet. Changes to mappings require a support ticket.
-
-Users with multiple mapping values (comma-separated) can be routed to multiple instances.
+Configured via your CSM (webform dataset or Excel). Comma-separated values route to multiple instances.
 
 ---
 
 ## JWT Token Structure
-
-The JWT token contains the user's identity and determines what they can do in the embedded edit experience.
 
 ### Required Fields
 
@@ -107,24 +76,20 @@ The JWT token contains the user's identity and determines what they can do in th
 
 ### Domo Roles
 
-The `role` field controls what the user can do in the embedded edit experience:
-
 | Role          | Capabilities                                                            |
 | ------------- | ----------------------------------------------------------------------- |
 | `Admin`       | Full access — manage users, data, content, and settings                 |
-| `Privileged`  | Create and edit dashboards, cards, dataflows; manage data sources       |
-| `Editor`      | Create and edit dashboards and cards; limited data source access        |
-| `Participant` | View and interact with shared content only (default if role is omitted) |
+| `Privileged`  | Create/edit dashboards, cards, dataflows; manage data sources           |
+| `Editor`      | Create/edit dashboards and cards; limited data source access            |
+| `Participant` | View and interact with shared content only (default if omitted)         |
 
-Choose the minimum role needed. Most external users should be `Editor` or `Participant`.
+Most external users should be `Editor` or `Participant`.
 
 ---
 
 ## Server-Side Implementation
 
 ### Step 1: Create the JWT Token
-
-Sign a JWT with the user's identity, role, and routing attribute using the shared secret from Domo.
 
 **Node.js / TypeScript:**
 
@@ -186,13 +151,11 @@ def create_edit_token(user):
 
 ### Step 2: Construct the Edit URL
 
-The edit URL sends the JWT to the Identity Broker, which validates it and redirects the user to the Domo edit experience:
-
 ```typescript
 const editUrl = `${process.env.IDP_URL}/jwt?token=${editToken}`;
 ```
 
-You can optionally append a `destination` parameter to deep-link to a specific page:
+Optionally deep-link to a specific page:
 
 ```typescript
 const editUrl = `${process.env.IDP_URL}/jwt?token=${editToken}&destination=/page/${pageId}`;
@@ -200,9 +163,7 @@ const editUrl = `${process.env.IDP_URL}/jwt?token=${editToken}&destination=/page
 
 ### Step 3: Build the API Route
 
-Create a server-side endpoint that authenticates your user, generates the JWT, and returns the edit URL.
-
-**Next.js App Router example:**
+**Next.js App Router:**
 
 ```typescript
 // app/api/editembed/route.ts
@@ -302,10 +263,9 @@ app.post("/api/editembed", authenticateUser, (req, res) => {
 
 ### Step 4: Render in an Iframe
 
-Unlike read-only embeds (which require a POST form submission), edit embeds load directly via the iframe's `src` attribute:
+Edit embeds load directly via iframe `src` (no POST form like read-only embeds):
 
 ```tsx
-// React component
 function EditEmbed({ editUrl }: { editUrl: string }) {
   return (
     <iframe
@@ -316,11 +276,6 @@ function EditEmbed({ editUrl }: { editUrl: string }) {
   );
 }
 ```
-
-**Comparison with read-only embed rendering:**
-
-- **Read-only:** Fetch embed token → create hidden form → POST to iframe target
-- **Edit:** Fetch edit URL → set as iframe `src` directly
 
 ---
 
@@ -374,8 +329,6 @@ function EmbedDashboard({ embedID }: { embedID: string }) {
 
 ## User Management for Edit Embeds
 
-Users who access the edit experience need additional fields beyond what read-only users need:
-
 ### Key User Properties
 
 | Property       | Purpose                              | Example                                    |
@@ -411,56 +364,22 @@ if (typeof mappingValue === "string" && mappingValue.includes(",")) {
 
 ## Deep Linking
 
-Use the `destination` parameter to send users directly to a specific page or dashboard in the edit experience:
-
 ```typescript
-// Link to a specific page
 const editUrl = `${IDP_URL}/jwt?token=${editToken}&destination=/page/${pageId}`;
-
-// Link to a specific card
 const editUrl = `${IDP_URL}/jwt?token=${editToken}&destination=/kpicard/${cardId}`;
 ```
-
-This is useful when you want to open the editor to a specific piece of content rather than the Domo home screen.
 
 ---
 
 ## Gotchas and Best Practices
 
-### Token Expiration
-
-Keep JWT tokens short-lived (5 minutes is recommended). The token is only used for the initial authentication — once the user is in the Domo session, the token is no longer needed. Short-lived tokens reduce the risk of token theft or replay.
-
-### Signing Algorithm
-
-Use `HS256` (HMAC-SHA256) for JWT signing. This is what Domo expects for the Identity Broker.
-
-### JTI Uniqueness
-
-Always use a UUID v4 for the `jti` field. This prevents replay attacks where a captured token is reused. Domo may reject tokens with previously-seen JTI values.
-
-### Mapping Value Handling
-
-The `KEY_ATTRIBUTE` field name is configurable — it's whatever you agreed on with your CSM. Common choices are `customer`, `keyAttribute`, or `tenant`. Make sure the values match exactly what's configured in the instance mapping on Domo's side.
-
-### Secret Management
-
-The `JWT_SECRET` is a shared secret between your server and Domo's Identity Broker. Treat it like a password:
-
-- Never expose it in client-side code
-- Store it in environment variables or a secrets manager
-- Don't commit it to version control
-
-### Edit vs Read-Only Security Model
-
-- **Read-only embeds** use OAuth client credentials (CLIENT_ID/SECRET) → embed token. The token is scoped to specific dashboards with specific filters.
-- **Edit embeds** use JWT → Identity Broker. The user gets a full Domo session with their assigned role. The scope is controlled by the role (Admin/Privileged/Editor/Participant) and the instance mapping.
-
-Edit embeds give users more power. Be thoughtful about role assignment — most external users should be `Editor` or `Participant`, not `Admin` or `Privileged`.
-
-### Instance Mapping Changes
-
-Changing which attribute values map to which Domo instances requires a support ticket to Domo. Plan your mapping strategy upfront and use stable, predictable values (like tenant IDs rather than company names that might change).
+- **Token expiration:** Keep JWTs short-lived (5 min recommended). Only used for initial auth — session persists after.
+- **Signing algorithm:** Use `HS256`. Domo expects this for the Identity Broker.
+- **JTI uniqueness:** Always UUID v4. Domo may reject reused JTI values (replay protection).
+- **Mapping values:** `KEY_ATTRIBUTE` name is whatever you agreed on with your CSM (`customer`, `keyAttribute`, `tenant`). Values must match Domo's instance mapping exactly.
+- **Secret management:** Never expose `JWT_SECRET` client-side. Use env vars or a secrets manager.
+- **Security model:** Read-only embeds scope to specific dashboards with filters. Edit embeds give a full Domo session per role — be conservative with role assignment.
+- **Instance mapping changes:** Use stable values (tenant IDs, not company names that might change).
 
 ---
 

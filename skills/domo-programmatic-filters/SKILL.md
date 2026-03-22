@@ -1,49 +1,38 @@
 ---
 name: domo-programmatic-filters
-description: Use this skill when a user is embedding a Domo dashboard or card and wants to control which rows of data each viewer sees, or swap the underlying dataset at embed time. Common scenarios: a sales rep should only see their region, tenants in a SaaS app should only see their own data, admins see everything but regular users see a subset, filters need to target specific datasets in a multi-dataset dashboard, or each tenant has their own dataset and needs dataset switching/redirects. Also covers SQL filters for complex WHERE logic (OR, BETWEEN, LIKE), JWT/token size limits when filter value lists are large, building the server-side embed token request with filter and datasetRedirects payloads, and the full OAuth access token to embed token flow. Trigger whenever someone has an embedded Domo visualization and needs per-viewer, per-role, per-tenant, or per-dataset data restrictions or dataset redirection. Do NOT trigger for Domo SSO setup, embed styling/branding, creating embed IDs, client-side Domo JS API filtering, Domo PDP policies inside Domo itself, or embedding non-Domo platforms like Tableau.
+description: Control which data each viewer sees in an embedded Domo dashboard/card via server-side programmatic filters and dataset switching. Covers the OAuth → embed token flow, standard filters, SQL filters (OR/BETWEEN/LIKE), per-dataset targeting, datasetRedirects for multi-tenant architectures, and token size limits. Use for any per-viewer, per-role, or per-tenant data restrictions at embed time. Not for client-side JS API filtering (use domo-jsapi-filters).
 ---
 
 # Domo Programmatic Filtering
 
-Programmatic filtering and dataset switching let you control what data each viewer sees in an embedded Domo dashboard or card — without provisioning individual Domo accounts. Filters and dataset redirects are applied server-side when generating an embed token, so they're enforced by Domo and can't be bypassed by the end user.
-
-This skill covers server-side programmatic filtering and dataset switching. For client-side runtime filtering via the JS API, see the `domo-client-filters` skill.
+Control what data each viewer sees in embedded Domo content via server-side filters and dataset switching. Enforced by Domo — end users can't bypass. For client-side filtering, see `domo-jsapi-filters`.
 
 ## How It Works
 
-A single Domo service account (proxy user) acts on behalf of all viewers. When someone loads your embedded content, your server:
+A proxy user (service account) acts on behalf of all viewers. Your server:
 
-1. Authenticates with Domo using OAuth client credentials → gets an **access token**
-2. Requests an **embed token** from Domo, passing filters specific to that viewer
-3. Returns the embed token to the client, which submits it to Domo via a POST form in an iframe
-
-Domo enforces the filters at render time. The viewer only sees data that passes the filter criteria.
+1. Authenticates with Domo (OAuth client credentials → **access token**)
+2. Requests an **embed token** with viewer-specific filters
+3. Returns the token to the client, which POSTs it to an iframe
 
 ## Prerequisites
 
-Before implementing programmatic filtering, you need:
+- Domo API client with `CLIENT_ID` and `CLIENT_SECRET` (developer.domo.com > My Account > New Client)
+- Embed ID (5-char ID from the embed dialog, not the page URL)
+- Dataset column names/IDs for filtering
 
-- A Domo API client (created at developer.domo.com under My Account > New Client)
-- The `CLIENT_ID` and `CLIENT_SECRET` from that API client
-- An embed ID for your dashboard or card (the 5-character ID from the embed dialog, not the page URL)
-- Knowledge of the dataset column names and IDs you want to filter on
-
-**Important:** Authentication must happen server-side due to CORS restrictions. Never expose your client credentials or make token requests from the browser.
+**All auth must happen server-side** (CORS restrictions). Never expose credentials client-side.
 
 ## The Embed Token Flow
 
 ### Step 1: Get an Access Token
-
-Exchange your client credentials for an access token using Basic Auth:
 
 ```
 POST https://api.domo.com/oauth/token?grant_type=client_credentials&scope=data%20audit%20user%20dashboard
 Authorization: Basic base64(CLIENT_ID:CLIENT_SECRET)
 ```
 
-The response includes an `access_token` you'll use in the next step.
-
-**Example (Node.js):**
+**Node.js:**
 ```typescript
 const credentials = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')
 
@@ -58,7 +47,7 @@ const response = await fetch(
 const { access_token } = await response.json()
 ```
 
-**Example (Python):**
+**Python:**
 ```python
 import requests
 from base64 import b64encode
@@ -117,10 +106,7 @@ The response includes an `authentication` property containing the embed token.
 
 ### Step 3: Render the Embed
 
-Submit the embed token to Domo via a hidden POST form targeting an iframe:
-
-**Dashboard URL:** `https://public.domo.com/embed/pages/{embed_id}`
-**Card URL:** `https://public.domo.com/cards/{embed_id}`
+Submit via hidden POST form targeting an iframe. Dashboard: `https://public.domo.com/embed/pages/{embed_id}`, Card: `https://public.domo.com/cards/{embed_id}`
 
 ```html
 <iframe id="domo-embed" name="domo-embed" width="100%" height="600"></iframe>
@@ -132,17 +118,15 @@ Submit the embed token to Domo via a hidden POST form targeting an iframe:
 <script>document.getElementById('embed-form').submit();</script>
 ```
 
-The POST-based submission is required by Domo for security — it prevents the token from appearing in URLs or browser history.
+POST submission prevents the token from appearing in URLs or browser history.
 
 ---
 
 ## Filter Types
 
-There are two ways to define programmatic filters: **standard filters** and **SQL filters**. Both are passed in the embed token request payload.
+Two types: **standard filters** and **SQL filters**, both in the embed token request.
 
 ### Standard Filters
-
-Passed via the `filters` array in the authorization object. Each filter targets a column with an operator and one or more values.
 
 ```json
 {
@@ -228,7 +212,7 @@ Passed via the `filters` array in the authorization object. Each filter targets 
 
 ### SQL Filters
 
-For complex filtering logic (OR conditions, BETWEEN, LIKE, nested expressions), use SQL WHERE clause syntax via the `sqlFilters` property. SQL filters are a sibling to `filters` in the authorization object, not nested inside it.
+For complex logic (OR, BETWEEN, LIKE, nested expressions), use SQL WHERE syntax via `sqlFilters` (sibling to `filters`, not nested).
 
 ```json
 {
@@ -260,13 +244,9 @@ For complex filtering logic (OR conditions, BETWEEN, LIKE, nested expressions), 
 |----------|------|-------------|
 | `datasourceIds` | string[] | Array of dataset UUIDs to apply the filter to |
 
-#### SQL Filter Syntax Rules
+#### Syntax Rules
 
-- Wrap column names in **backticks**: `` `Column Name` ``
-- Wrap string values in **single quotes**: `'value'`
-- Numeric values need no quoting: `> 10000`
-- Supports standard SQL operators: `IN`, `NOT IN`, `BETWEEN`, `LIKE`, `AND`, `OR`, `IS NULL`, `IS NOT NULL`
-- Use parentheses for grouping complex logic
+Column names in **backticks**, strings in **single quotes**, numerics unquoted. Supports: `IN`, `NOT IN`, `BETWEEN`, `LIKE`, `AND`, `OR`, `IS NULL`, `IS NOT NULL`. Use parentheses for grouping.
 
 #### SQL Filter Examples
 
@@ -311,7 +291,7 @@ For complex filtering logic (OR conditions, BETWEEN, LIKE, nested expressions), 
 
 ### Combining Standard and SQL Filters
 
-You can use both `filters` and `sqlFilters` in the same authorization. Standard filters are applied first, then SQL filters further narrow the results. This is useful when you have simple per-column filters alongside more complex logic:
+Both can coexist in one authorization. Standard filters apply first, then SQL filters narrow further:
 
 ```json
 {
@@ -338,7 +318,7 @@ You can use both `filters` and `sqlFilters` in the same authorization. Standard 
 
 ### Per-User Filtering
 
-The most common pattern: each user sees only their own data. Store the user-to-filter mapping in your application's database and look it up at embed time.
+Store user-to-filter mappings in your database, look up at embed time:
 
 ```typescript
 // Pseudocode — adapt to your framework and data layer
@@ -382,16 +362,11 @@ function getFiltersForRole(role: string): Filter[] {
 
 ## Dataset Switching
 
-Dataset switching lets you dynamically redirect the underlying data of an embedded dashboard at embed time. Instead of combining all customer data into one master dataset and filtering with PDP or programmatic filters, you can maintain separate datasets per customer (or tenant, region, etc.) and swap them in when generating the embed token.
-
-This is useful when:
-- Each customer has their own isolated dataset (common in multi-tenant architectures)
-- You want to reuse a single dashboard template across different data sources
-- Datasets have the same schema but different data (e.g., per-region copies)
+Redirect the underlying dataset of an embedded dashboard at embed time — useful for multi-tenant architectures where each customer has their own dataset with the same schema.
 
 ### How It Works
 
-Pass a `datasetRedirects` mapping in the authorization object. The keys are the original dataset IDs (the ones the dashboard was built on), and the values are the target dataset IDs to swap in:
+Pass `datasetRedirects` in the authorization object (original dataset ID → target dataset ID):
 
 ```json
 {
@@ -410,11 +385,11 @@ Pass a `datasetRedirects` mapping in the authorization object. The keys are the 
 }
 ```
 
-The target datasets must have the same column schema (column names and types) as the originals. If they don't, cards that reference missing or mismatched columns will break.
+Target datasets must match the original schema (column names and types).
 
-### Combining Dataset Switching with Filters
+### Combining with Filters
 
-Dataset switching and programmatic filters work together. First the dataset is swapped, then filters are applied to the swapped dataset:
+Redirects apply first, then filters run against the swapped dataset:
 
 ```json
 {
@@ -435,11 +410,9 @@ Dataset switching and programmatic filters work together. First the dataset is s
 }
 ```
 
-This is the most powerful pattern for multi-tenant embedding: swap to the tenant's dataset, then further filter rows within it.
-
 ### Per-User Dataset Switching
 
-A typical implementation maps each user or tenant to their own dataset IDs:
+Map each tenant to their dataset IDs:
 
 ```typescript
 function getDatasetRedirects(tenant: Tenant): Record<string, string> {
@@ -459,50 +432,24 @@ function getDatasetRedirects(tenant: Tenant): Record<string, string> {
 
 ### Important Notes
 
-- **Schema must match:** Target datasets must have the same column names and types as the originals. The dashboard's cards, filters, and calculated fields all reference columns by name.
-- **Multiple datasets:** A single dashboard can use multiple datasets. You can redirect all, some, or none of them. Only include redirects for datasets you want to swap.
-- **Works with all filter types:** Dataset switching is compatible with standard filters, SQL filters, and PDP policies. Redirects are applied first, then filters run against the redirected data.
+- **Schema must match** — column names and types must be identical (cards, filters, and calculated fields reference by name)
+- **Partial redirects OK** — redirect all, some, or none of a dashboard's datasets
+- **Compatible with all filter types** — redirects apply first, then standard/SQL/PDP filters
 
 ---
 
 ## Gotchas and Best Practices
 
-### JWT Size Limit
-Browsers enforce a ~8KB limit on the JWT used for programmatic filters. If you have filters with extremely long value lists (hundreds of entries), you'll hit this limit. Solutions:
-- Transform your data in Domo to create aggregated or grouped columns that reduce the number of filter values needed
-- Use SQL filters with subqueries if your filter logic can be simplified
-- Split across multiple datasets with `datasourceId` targeting
-
-### Column Name Matching
-- Standard filters match by exact column name — spelling and case must match the dataset column
-- SQL filters use backtick-quoted column names: `` `My Column` ``
-- If a column name exists in multiple datasets on the same dashboard and you don't specify `datasourceId`/`datasourceIds`, the filter applies to all of them
-
-### Token Refresh
-Access tokens and embed tokens both expire. Build refresh logic into your server:
-- Cache the access token and refresh it before expiry
-- Generate embed tokens per-request (they're scoped to a specific session)
-
-### Empty Filters
-Passing an empty `filters` array (`[]`) means no filtering — the viewer sees all data the proxy user has access to. This is valid for users who should see everything. Never omit the `filters` key entirely; always pass at least an empty array.
-
-### Filter Validation
-Validate filters server-side before sending them to Domo. Common issues:
-- `values` must be an array, even for single-value operators like `EQUALS` — pass `["value"]` not `"value"`
-- Numeric values should be actual numbers, not strings: `[10000]` not `["10000"]`
-- Operator names are exact: `GREATER_THAN_EQUALS_TO` not `GREATER_THAN_OR_EQUAL`
-
-### Security
-- Never generate embed tokens client-side — your OAuth credentials would be exposed
-- Validate that the requesting user is authorized to view the requested embed ID
-- Validate filter values server-side to prevent users from manipulating their own filters
-- Use the minimum necessary `permissions` array — don't grant `EXPORT` if users shouldn't export data
+- **JWT size limit (~8KB):** Long value lists hit this. Solutions: aggregate columns in Domo, use SQL filters, or split with `datasourceId` targeting.
+- **Column name matching:** Exact spelling and case required. Without `datasourceId`, filters apply to all datasets with a matching column.
+- **Token refresh:** Cache access tokens, refresh before expiry. Generate embed tokens per-request.
+- **Empty filters:** `[]` means no filtering (user sees everything). Always include the `filters` key — don't omit it.
+- **Filter validation:** `values` must be an array (even for `EQUALS`). Numerics must be numbers, not strings. Operator names are exact (`GREATER_THAN_EQUALS_TO`, not `GREATER_THAN_OR_EQUAL`).
+- **Security:** Never generate tokens client-side. Validate embed ID authorization and filter values server-side. Use minimum `permissions` (omit `EXPORT` if not needed).
 
 ---
 
 ## TypeScript Type Definitions
-
-For reference, here are useful type definitions when implementing programmatic filtering:
 
 ```typescript
 type FilterOperator =
