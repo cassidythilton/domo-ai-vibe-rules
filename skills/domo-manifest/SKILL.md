@@ -1,3 +1,7 @@
+---
+name: domo-manifest
+description: Configure manifest mappings for datasets, workflows, collections, and Code Engine packagesMapping contracts.
+---
 
 # manifest.json
 
@@ -19,7 +23,7 @@ The `manifest.json` file is critical - it declares all external resources your a
   "datasetsMapping": [],
   "collections": [],
   "workflowMapping": [],
-  "packageMapping": []
+  "packagesMapping": []
 }
 ```
 
@@ -31,7 +35,7 @@ The `manifest.json` file is critical - it declares all external resources your a
 - `datasetsMapping` - Datasets the app can query
 - `collections` - AppDB collections for storage
 - `workflowMapping` - Workflows the app can trigger
-- `packageMapping` - Code Engine functions the app can call
+- `packagesMapping` - Code Engine function mappings and contracts
 
 ## Required files
 - `manifest.json` - App configuration (required)
@@ -55,3 +59,48 @@ The `manifest.json` file is critical - it declares all external resources your a
 - Use `dataSetId` (not `id`) for the dataset identifier
 - `fields` array is **required** - must be present even if empty `[]`
 - Omitting `fields` causes: `Cannot read properties of undefined (reading 'map')`
+
+## Code Engine packagesMapping structure
+
+```json
+{
+  "packagesMapping": [
+    {
+      "name": "myPackage",
+      "alias": "myFunction",
+      "packageId": "00000000-0000-0000-0000-000000000000",
+      "version": "1.0.0",
+      "functionName": "myFunction",
+      "parameters": [
+        {
+          "name": "param1",
+          "displayName": "param1",
+          "type": "decimal",
+          "value": null,
+          "nullable": false,
+          "isList": false,
+          "children": [],
+          "entitySubType": null,
+          "alias": "param1"
+        }
+      ],
+      "output": {
+        "name": "result",
+        "displayName": "result",
+        "type": "number",
+        "value": null,
+        "nullable": false,
+        "isList": false,
+        "children": [],
+        "entitySubType": null,
+        "alias": "result"
+      }
+    }
+  ]
+}
+```
+
+Code Engine manifest gotchas:
+- Use `packagesMapping` (with `s`), not `packageMapping`.
+- Include full contract fields on each parameter and output.
+- Ensure parameter names/types/nullability match what app code actually sends.

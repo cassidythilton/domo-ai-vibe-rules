@@ -1,78 +1,116 @@
 ---
 name: domo-code-engine
-description: Execute Code Engine functions from apps using CodeEngineClient with manifest mapping constraints.
+description: Execute Code Engine functions from apps with domo.post and strict packagesMapping input/output contracts.
 ---
 
 # Rule: Domo App Platform Code Engine (Toolkit-First)
 
-This rule is **toolkit-first**. Use `CodeEngineClient.runFunction(...)` for Code Engine execution from apps.
+Use a contract-first pattern for Code Engine calls.
+In practice, prefer direct `domo.post('/domo/codeengine/v2/packages/{alias}', params)` when wiring app calls.
 
 > Legacy endpoint-first guidance has been archived to `archive/legacy-rules/domo-code-engine.md`.
 
-## Canonical Client
+## Working call pattern (`domo.post`)
 
 ```bash
-yarn add @domoinc/toolkit
+npm install ryuu.js
 ```
 
 ```typescript
-import { CodeEngineClient } from '@domoinc/toolkit';
+import domo from 'ryuu.js';
 
-const packageId = '12a45bc8-12de-fg67-891h-12ij567891kl';
-const version = '0.1.0';
-const functionName = 'calculateTax';
-
-const response = await CodeEngineClient.runFunction(
-  packageId,
-  version,
-  functionName,
-  { amount: 1000, state: 'CA' }
-);
-const result = response?.body ?? response?.data ?? response;
+const response = await domo.post('/domo/codeengine/v2/packages/calculateTax', {
+  amount: 1000,
+  state: 'CA'
+});
 ```
 
-## `runFunction` signature
+## Response parsing requirement
 
 ```typescript
-CodeEngineClient.runFunction(
-  packageId: string,
-  version: string,
-  functionName: string,
-  inputs: Record<string, any>,
-  options?: { parts?: FunctionParts[] }
-): Promise<any>;
+// First integration pass: inspect exact response shape for this function
+console.log('Code Engine response:', response);
+
+const body = response?.body ?? response?.data ?? response;
+
+// Handle common output shapes
+const output =
+  body?.output ??
+  body?.result ??
+  body?.value ??
+  body;
+
+if (typeof output === 'number') {
+  // numeric output
+} else if (typeof output === 'string') {
+  // string output
+} else if (output && typeof output === 'object') {
+  // structured object output
+} else {
+  throw new Error('Code Engine returned no usable output');
+}
+```
+
+## Manifest requirement: `packagesMapping` (with `s`)
+
+Use `packagesMapping` and define full parameter/output contracts.
+
+```json
+{
+  "packagesMapping": [
+    {
+      "name": "myPackage",
+      "alias": "myFunction",
+      "packageId": "00000000-0000-0000-0000-000000000000",
+      "version": "1.0.0",
+      "functionName": "myFunction",
+      "parameters": [
+        {
+          "name": "param1",
+          "displayName": "param1",
+          "type": "decimal",
+          "value": null,
+          "nullable": false,
+          "isList": false,
+          "children": [],
+          "entitySubType": null,
+          "alias": "param1"
+        }
+      ],
+      "output": {
+        "name": "result",
+        "displayName": "result",
+        "type": "number",
+        "value": null,
+        "nullable": false,
+        "isList": false,
+        "children": [],
+        "entitySubType": null,
+        "alias": "result"
+      }
+    }
+  ]
+}
 ```
 
 ## Required contract disclosure to user
 
-When recommending or generating `CodeEngineClient.runFunction(...)` usage, the agent must explicitly tell the user:
-- exact input parameter names and types sent in `inputs`
-- expected output shape and types returned by the function
+When recommending or generating Code Engine calls, the agent must explicitly tell the user:
+- exact input parameter names, types, and `nullable` expectations
+- expected output name, type, and shape (number/string/object)
 
-This is required so the user can implement a matching Code Engine function contract.
+This is required so the user can build a matching Code Engine function and manifest contract.
 
 ## Error Handling Pattern
 
 ```typescript
-async function executeFunction(
-  packageId: string,
-  version: string,
-  functionName: string,
-  payload: Record<string, unknown>
-) {
+async function executeFunction(alias: string, payload: Record<string, unknown>) {
   try {
-    const response = await CodeEngineClient.runFunction(
-      packageId,
-      version,
-      functionName,
-      payload
-    );
+    const response = await domo.post(`/domo/codeengine/v2/packages/${alias}`, payload);
+    console.log('Code Engine response:', response);
     return response?.body ?? response?.data ?? response;
   } catch (error) {
-    console.error(
-      `CodeEngineClient.runFunction failed for ${packageId}@${version}#${functionName}`,
-      error
-    );
+    console.error(`Code Engine call failed for alias ${alias}`, error);
     throw error;
   }
 }
@@ -85,10 +123,11 @@ async function executeFunction(
 - Operational gotchas: `.cursor/rules/09-gotchas.mdc`
 
 ## Checklist
-- [ ] Calls use `CodeEngineClient.runFunction(packageId, version, functionName, inputs)`
-- [ ] `packageId`, `version`, and `functionName` are correct for the deployed function
-- [ ] Inputs match the function contract
-- [ ] Agent states exact input parameter names/types for `runFunction` calls
-- [ ] Agent states expected output shape/types for the function response
+- [ ] Calls use `domo.post('/domo/codeengine/v2/packages/{alias}', params)` pattern
+- [ ] Manifest uses `packagesMapping` (not `packageMapping`)
+- [ ] `packagesMapping.parameters` and `output` include full contract fields (`name`, `displayName`, `type`, `value`, `nullable`, `isList`, `children`, `entitySubType`, `alias`)
+- [ ] Agent states input parameter names, types, and nullable status to user
+- [ ] Agent states expected output name/type/shape to user
+- [ ] First implementation logs response and validates real response shape
 - [ ] Output parsing handles `body`/`data`/raw response shape
 - [ ] Errors handled and surfaced to UI or logs

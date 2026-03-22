@@ -471,16 +471,30 @@ const summary = responseBody.output || responseBody.choices?.[0]?.output;
 
 ## CodeEngineClient - Serverless Functions
 
-Requires `packageMapping` in manifest.json.
+In app implementations, prefer the working direct-call pattern via `domo.post` and `packagesMapping` contracts.
+If you use Toolkit docs examples, verify runtime behavior in your environment.
 
 ```typescript
-// Execute function
-const response = await CodeEngineClient.execute(
-  'calculateTax',  // Function alias from manifest
-  { amount: 1000, state: 'CA' }
-);
-const result = response.body.output;
+import domo from 'ryuu.js';
+
+// Execute function by alias
+const response = await domo.post('/domo/codeengine/v2/packages/calculateTax', {
+  amount: 1000,
+  state: 'CA'
+});
+
+// Inspect first run response shape
+console.log('Code Engine response:', response);
+
+const body = response?.body ?? response?.data ?? response;
+const result =
+  body?.output ??
+  body?.result ??
+  body?.value ??
+  body;
 ```
+
+Manifest note: use `packagesMapping` (with `s`) and include full parameter/output schema fields.
 
 ## WorkflowClient - Domo Workflows
 
