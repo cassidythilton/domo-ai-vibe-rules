@@ -137,7 +137,116 @@ export default defineConfig({
 });
 ```
 
-#### Step 6: Port Components
+**Remove Lovable-specific Vite plugins** like `lovable-tagger`:
+```javascript
+// ❌ Remove this
+import { componentTagger } from "lovable-tagger";
+plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+
+// ✅ Replace with
+plugins: [react()],
+```
+
+#### Step 6: Remove Lovable-Specific Dependencies
+
+Lovable/v0 apps include tooling that must be removed:
+
+**Dependencies to remove:**
+- `next-themes` — SSR theme provider; replace `useTheme()` with a hardcoded theme string (e.g. `"light"`)
+- `lovable-tagger` — Lovable's dev-only component tagger
+
+**Files to delete:**
+- `playwright.config.ts` — Uses `lovable-agent-playwright-config`
+- `playwright-fixture.ts` — Re-exports Lovable test fixtures
+- `bun.lock` / `bun.lockb` — Lovable uses Bun; standardize on npm
+- `App.css` — Often unused in generated apps (verify first)
+
+**Fix `next-themes` usage in Sonner toaster:**
+```typescript
+// ❌ Before (depends on next-themes)
+import { useTheme } from "next-themes";
+const { theme = "system" } = useTheme();
+<Sonner theme={theme as ToasterProps["theme"]} />
+
+// ✅ After (hardcoded, no SSR dependency)
+<Sonner theme="light" />
+```
+
+#### Step 7: Create Domo Manifest
+
+Domo requires a `manifest.json` in the publish directory:
+
+```json
+{
+  "name": "My App Name",
+  "version": "1.0.0",
+  "size": {
+    "width": 10,
+    "height": 10
+  },
+  "mapping": [],
+  "fileName": "index.html",
+  "id": "",
+  "proxyId": ""
+}
+```
+
+- `name` — Display name in Domo
+- `size` — Card dimensions (columns x rows on the Domo dashboard grid)
+- `mapping` — Dataset mappings (empty array if using mock data or AppDB)
+- `fileName` — Entry HTML file (always `index.html`)
+- `id` — Leave empty; `domo publish` fills this on first publish
+
+#### Step 8: Create Thumbnail
+
+**REQUIRED** — `domo publish` will fail without this.
+
+Place a **300x300 PNG** named `thumbnail.png` in the project root. This is used in the Domo Appstore and mobile app.
+
+```bash
+# Generate a simple thumbnail programmatically (Python + Pillow)
+python3 -c "
+from PIL import Image, ImageDraw, ImageFont
+img = Image.new('RGB', (300, 300), color=(15, 23, 42))
+draw = ImageDraw.Draw(img)
+draw.rectangle([0, 0, 300, 6], fill=(99, 102, 241))
+try:
+    font = ImageFont.truetype('/System/Library/Fonts/Helvetica.ttc', 72)
+except: font = ImageFont.load_default()
+bbox = draw.textbbox((0, 0), 'EF', font=font)
+draw.text(((300-(bbox[2]-bbox[0]))/2, 110), 'EF', fill='white', font=font)
+img.save('thumbnail.png')
+"
+```
+
+Or use any 300x300 PNG image.
+
+#### Step 9: Publish from `dist/` Directory
+
+**CRITICAL** — Running `domo publish` from the project root causes a `400: Unable to parse form content` error because the CLI tries to upload `node_modules`, source files, and config files, creating an oversized payload.
+
+**Solution:** Copy `manifest.json` and `thumbnail.png` into `dist/`, then publish from there:
+
+```bash
+# Manual publish
+npm run build
+cp manifest.json thumbnail.png dist/
+cd dist && domo publish
+```
+
+**Automate it** by updating `package.json` scripts:
+```json
+{
+  "scripts": {
+    "build": "vite build && cp manifest.json thumbnail.png dist/",
+    "publish": "npm run build && cd dist && domo publish"
+  }
+}
+```
+
+This ensures only built assets, the manifest, and thumbnail are uploaded.
+
+#### Step 10: Port Components
 
 Use DA CLI to generate new components with correct structure, then port logic:
 
@@ -169,13 +278,20 @@ da generate component SalesChart
 - [ ] Detect and remove all SSR code
 - [ ] Remove API routes (`pages/api/`, `app/api/`)
 - [ ] Replace `fetch()` calls to backend with Domo APIs
-- [ ] Update routing to `HashRouter`
+- [ ] Update routing from `BrowserRouter` to `HashRouter`
 - [ ] Configure Vite with `base: './'`
+- [ ] Remove Lovable-specific plugins (`lovable-tagger`) from Vite config
+- [ ] Remove `next-themes` and replace `useTheme()` with hardcoded theme
+- [ ] Delete Lovable files (`playwright.config.ts`, `playwright-fixture.ts`, `bun.lock*`)
+- [ ] Add `ryuu.js` dependency for Domo API integration
 - [ ] Replace environment variables (use Domo APIs instead)
-- [ ] Update imports (remove Next.js/Remix specific)
+- [ ] Update imports (remove Next.js/Remix/Lovable specific)
+- [ ] Create `manifest.json` with app name, version, and size
+- [ ] Create `thumbnail.png` (300x300 PNG) in project root
+- [ ] Update build script to copy `manifest.json` + `thumbnail.png` into `dist/`
 - [ ] Test all data fetching works with Domo APIs
-- [ ] Verify app builds and runs locally
-- [ ] Publish to Domo and test in platform
+- [ ] Verify app builds and runs locally (`npm run build`)
+- [ ] Publish from `dist/` directory (`cd dist && domo publish`)
 
 ### Example: Converting a Simple Dashboard
 
