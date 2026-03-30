@@ -5,19 +5,19 @@
 A library of markdown-only Agent Skills and high-level rules for building Domo custom apps, embedding Domo content, and developing connectors.
 The structure is modeled after Google’s `stitch-skills` repository style: skill catalog at the root, one entrypoint file per skill, and simple install/discovery guidance.
 
-## Installation & Discovery
+## Installation
 
-Install skills from a GitHub repository with the `skills` CLI:
+Tell your agent:
+
+> Install the Domo skills from https://github.com/stahura/domo-ai-vibe-rules/skills
+
+Or run it yourself:
 
 ```bash
-# List skills in this repository
-npx skills add stahura/domo-ai-vibe-rules --list
-
-# Install one skill globally
-npx skills add stahura/domo-ai-vibe-rules --skill apps/domo-js --global
+npx skills add https://github.com/stahura/domo-ai-vibe-rules/skills
 ```
 
-For new Domo app builds, ask your agent to start with the `initial-build` playbook skill first, then follow its recommended skill order.
+For new Domo app builds, ask your agent to start with the `initial-build` skill first — it sequences the other skills for you.
 
 ## Why This Organization
 
