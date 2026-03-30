@@ -36,13 +36,13 @@ Domo is a broad platform — "data query" means something completely different w
 
 More directories can be added as new skills are contributed.
 
-### Playbooks vs. skills
+### Skill orchestration vs. skills
 
-**Playbooks** are top-level runbooks that sequence multiple skills for a full outcome (e.g. building an app from scratch). Regular skills are atomic — one API, one tool, one concept. Playbooks compose them.
+**Skill orchestration** skills are end-to-end orchestration skills that reference sub-skills to perform many Domo operations in sequence (e.g. building an app from scratch). Regular skills are atomic — one API, one tool, one concept. Orchestration skills compose them.
 
 ## Available Skills
 
-### Playbooks
+### Skill Orchestration (`skills/skill-orchestration/`)
 
 - `initial-build` — Kickoff sequence for new Domo app builds; routes to the right rules and skills in order.
 
