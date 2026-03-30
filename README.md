@@ -2,16 +2,21 @@
 
 > Unofficial community repository of Domo agent skills and rules.
 
-A library of markdown-only Agent Skills and high-level rules for building Domo custom apps, embedding Domo content, and developing connectors.
-The structure is modeled after Google’s `stitch-skills` repository style: skill catalog at the root, one entrypoint file per skill, and simple install/discovery guidance.
+A library of markdown-only Agent Skills and high-level rules for building Domo custom apps, embedding Domo content, and developing connectors. Made primarily for **Claude Code** users but compatible with other AI coding tools.
+
+Skills follow the [Agent Skills open standard](https://code.claude.com/docs/en/skills) — see the Claude docs for full details on how skills work, frontmatter options, and advanced patterns.
 
 ## Installation
 
-Tell your agent:
+Skills install into `~/.claude/skills/` on your machine. This folder is hidden by default in Finder and most file browsers — if you can’t find it, ask your AI agent:
+
+> Check that Domo skills are installed in ~/.claude/skills/ and list what’s there.
+
+**Easiest way — tell your agent:**
 
 > Install the Domo skills from https://github.com/stahura/domo-ai-vibe-rules/skills
 
-Or run it yourself:
+**Or run it yourself:**
 
 ```bash
 npx skills add https://github.com/stahura/domo-ai-vibe-rules/skills
