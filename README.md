@@ -14,74 +14,92 @@ Install skills from a GitHub repository with the `skills` CLI:
 npx skills add stahura/domo-ai-vibe-rules --list
 
 # Install one skill globally
-npx skills add stahura/domo-ai-vibe-rules --skill cap-apps-domo-js --global
+npx skills add stahura/domo-ai-vibe-rules --skill apps/domo-js --global
 ```
 
-For new Domo app builds, ask your agent to start with the `pb-apps-initial-build` skill first, then follow its recommended skill order.
+For new Domo app builds, ask your agent to start with the `initial-build` playbook skill first, then follow its recommended skill order.
 
-## Why This Taxonomy
+## Why This Organization
 
-Domo is a broad platform — "data query" means something completely different when you're querying from a custom app vs. a Python script vs. an embedded dashboard. A flat list of skills becomes ambiguous fast, so every skill is categorized by **type**, **feature area**, and **name** using the pattern `{type}-{feature}-{name}`.
+Domo is a broad platform — "data query" means something completely different when you're querying from a custom app vs. a Python script vs. an embedded dashboard. A flat list of skills becomes ambiguous fast, so skills are organized into **feature directories** with short, descriptive names.
 
-### Skill types
+### Feature directories
 
-| Prefix | Type | What it is | Example |
-|--------|------|-----------|---------|
-| `cap-` | **Capability** | Atomic, single-topic skill. One API, one tool, one concept. | `cap-apps-appdb` |
-| `wf-` | **Workflow** | Multi-step procedure that composes several capabilities for a bounded job. | `wf-apps-migrate-lovable` |
-| `pb-` | **Playbook** | End-to-end orchestration runbook for a full outcome. References capabilities and workflows in order. | `pb-apps-initial-build` |
+| Directory | Scope |
+|-----------|-------|
+| `apps/` | Domo App Platform custom apps |
+| `domo-everywhere/` | Embedding Domo content in external applications |
+| `connectors/` | Custom Connector IDE |
+| `playbooks/` | End-to-end orchestration runbooks that reference other skills in order |
+| `documents/` | Document and slide deck generation |
+| `cli/` | Command-line tooling (future) |
 
-### Feature areas
+More directories can be added as new skills are contributed.
 
-| Segment | Scope |
-|---------|-------|
-| `apps-` | Domo App Platform custom apps |
-| `de-` | Domo Everywhere (embedding) |
-| `connector-` | Custom Connector IDE |
+### Playbooks vs. skills
 
-More feature areas (e.g. `dataflow-`, `sdk-`) can be added as new skills are contributed.
+**Playbooks** are top-level runbooks that sequence multiple skills for a full outcome (e.g. building an app from scratch). Regular skills are atomic — one API, one tool, one concept. Playbooks compose them.
 
 ## Available Skills
 
-### Playbooks (`pb-`)
+### Playbooks
 
-- `pb-apps-initial-build` - Kickoff sequence for new Domo app builds; routes to the right rules and skills in order.
+- `initial-build` — Kickoff sequence for new Domo app builds; routes to the right rules and skills in order.
 
-### Capabilities (`cap-`)
+### Apps (`skills/apps/`)
 
-**App Platform**
-- `cap-apps-da-cli` - Recommended for advanced users using DA CLI; ask your agent to use this skill for advanced scaffolding, generation, and manifest instance workflows.
-- `cap-apps-publish` - Build and publish flow (`npm run build`, `cd dist`, `domo publish`).
-- `cap-apps-domo-js` - `ryuu.js` usage, navigation/events, and import safety.
-- `cap-apps-dataset-query` - Detailed `@domoinc/query` syntax and constraints.
-- `cap-apps-data-api` - High-level data-access routing skill; points to query skill.
-- `cap-apps-toolkit` - `@domoinc/toolkit` client usage and response handling.
-- `cap-apps-appdb` - Toolkit-first AppDB CRUD/query patterns.
-- `cap-apps-ai-service-layer` - Toolkit-first AI client usage and parsing.
-- `cap-apps-code-engine` - Code Engine function invocation patterns and contracts.
-- `cap-apps-workflow` - Workflow start/status patterns and input contracts.
-- `cap-apps-manifest` - `manifest.json` mapping requirements and gotchas.
-- `cap-apps-sql-query` - SqlClient raw SQL query patterns and response parsing.
-- `cap-apps-performance` - Data query performance rules.
+- `da-cli` — Recommended for advanced users using DA CLI; ask your agent to use this skill for advanced scaffolding, generation, and manifest instance workflows.
+- `publish` — Build and publish flow (`npm run build`, `cd dist`, `domo publish`).
+- `domo-js` — `ryuu.js` usage, navigation/events, and import safety.
+- `dataset-query` — Detailed `@domoinc/query` syntax and constraints.
+- `data-api` — High-level data-access routing skill; points to query skill.
+- `toolkit` — `@domoinc/toolkit` client usage and response handling.
+- `appdb` — Toolkit-first AppDB CRUD/query patterns.
+- `ai-service-layer` — Toolkit-first AI client usage and parsing.
+- `code-engine` — Code Engine function invocation patterns and contracts.
+- `workflow` — Workflow start/status patterns and input contracts.
+- `manifest` — `manifest.json` mapping requirements and gotchas.
+- `sql-query` — SqlClient raw SQL query patterns and response parsing.
+- `performance` — Data query performance rules.
+- `migrate-lovable` — Convert SSR-heavy generated apps to Domo-compatible client apps.
+- `migrate-googleai` — Convert AI Studio-origin projects to Domo static deploy contract.
 
-**Domo Everywhere (Embed)**
-- `cap-de-programmatic-filters` - Server-side programmatic filtering and dataset switching for embedded Domo dashboards and cards.
-- `cap-de-edit-embed` - Embedded edit experience via the Domo Identity Broker with JWT authentication and role-based access.
-- `cap-de-jsapi-filters` - Client-side JS API filter methods for embedded Domo content.
+### Domo Everywhere (`skills/domo-everywhere/`)
 
-**Connectors**
-- `cap-connector-dev` - Connector IDE auth/data processing patterns (not for Domo app/card builds).
+- `programmatic-filters` — Server-side programmatic filtering and dataset switching for embedded Domo dashboards and cards.
+- `edit-embed` — Embedded edit experience via the Domo Identity Broker with JWT authentication and role-based access.
+- `jsapi-filters` — Client-side JS API filter methods for embedded Domo content.
+- `embed-portal` — Full external-user portal build: auth, user management, data isolation, and Domo embed integration.
 
-### Workflows (`wf-`)
+### Documents (`skills/documents/`)
 
-- `wf-apps-migrate-lovable` - Convert SSR-heavy generated apps to Domo-compatible client apps.
-- `wf-apps-migrate-googleai` - Convert AI Studio-origin projects to Domo static deploy contract.
+- `html-deck` — Build HTML slide decks from source content and convert to pixel-perfect PDF via Puppeteer.
+
+### Connectors (`skills/connectors/`)
+
+- `connector-dev` — Connector IDE auth/data processing patterns (not for Domo app/card builds).
 
 ## Repository Structure
 
 ```text
-skills/<skill-name>/
-└── SKILL.md
+skills/
+├── apps/
+│   ├── appdb/SKILL.md
+│   ├── dataset-query/SKILL.md
+│   ├── domo-js/SKILL.md
+│   └── ...
+├── domo-everywhere/
+│   ├── edit-embed/SKILL.md
+│   ├── jsapi-filters/SKILL.md
+│   ├── programmatic-filters/SKILL.md
+│   └── embed-portal/SKILL.md
+├── connectors/
+│   └── connector-dev/SKILL.md
+├── playbooks/
+│   └── initial-build/SKILL.md
+├── documents/
+│   └── html-deck/SKILL.md
+├── cli/
 
 rules/
 ├── core-custom-apps-rule.md
