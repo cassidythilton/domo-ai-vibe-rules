@@ -141,12 +141,6 @@ async function executeFunction(alias: string, payload: Record<string, unknown>) 
 }
 ```
 
-## Canonical Rules References
-
-- Toolkit patterns: `.cursor/rules/04-toolkit.mdc`
-- Manifest mapping details: `.cursor/rules/06-manifest.mdc`
-- Operational gotchas: `.cursor/rules/09-gotchas.mdc`
-
 ## Checklist
 - [ ] Calls use `domo.post('/domo/codeengine/v2/packages/{alias}', params)` pattern
 - [ ] Manifest uses `packagesMapping` (not `packageMapping`)

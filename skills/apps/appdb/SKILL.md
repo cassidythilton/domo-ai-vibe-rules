@@ -145,11 +145,6 @@ Collections still must exist in `manifest.json` under `collections`.
 }
 ```
 
-## Canonical Rules References
-
-- Toolkit AppDB patterns: `.cursor/rules/04-toolkit.mdc`
-- AppDB gotchas and sync caveats: `.cursor/rules/09-gotchas.mdc`
-
 ## Checklist
 - [ ] `collections` mapping exists in manifest
 - [ ] `AppDBClient.DocumentsClient` used for CRUD

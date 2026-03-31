@@ -82,12 +82,6 @@ async function runWorkflow(workflowAlias: string, payload: Record<string, unknow
 }
 ```
 
-## Canonical Rules References
-
-- Toolkit workflow methods: `.cursor/rules/04-toolkit.mdc`
-- Workflow mapping requirements: `.cursor/rules/06-manifest.mdc`
-- Runtime caveats: `.cursor/rules/09-gotchas.mdc`
-
 ## Checklist
 - [ ] `workflowMapping` is configured
 - [ ] App card is mapped to the correct workflow in Domo UI

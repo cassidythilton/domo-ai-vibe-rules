@@ -63,3 +63,4 @@ alwaysApply: true
 - Edit embed / Identity Broker -> `skills/domo-everywhere/edit-embed/SKILL.md`
 - Embed portal (full external-user portal) -> `skills/domo-everywhere/embed-portal/SKILL.md`
 - HTML slide deck to PDF -> `skills/documents/html-deck/SKILL.md`
+- Default app theme -> `skills/themes/domo-app-theme/SKILL.md`
