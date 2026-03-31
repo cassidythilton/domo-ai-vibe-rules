@@ -8,6 +8,13 @@ description: Execute Code Engine functions from apps with domo.post and strict p
 Use a contract-first pattern for Code Engine calls.
 In practice, prefer direct `domo.post('/domo/codeengine/v2/packages/{alias}', params)` when wiring app calls.
 
+Package lifecycle operations are handled by CLI skills:
+
+- `skills/cli/code-engine-create/SKILL.md`
+- `skills/cli/code-engine-update/SKILL.md`
+
+Use this skill for runtime invocation patterns inside app code, not package create/update orchestration.
+
 > Legacy endpoint-first guidance has been archived to `archive/legacy-rules/domo-code-engine.md`.
 
 ## Working call pattern (`domo.post`)
@@ -33,12 +40,25 @@ console.log('Code Engine response:', response);
 
 const body = response?.body ?? response?.data ?? response;
 
+// Some package contracts return nested envelopes:
+// { response: { ... } } or { response: { response: { ... } } }
+const unwrapResponse = (value: unknown) => {
+  let current = value as any;
+  let depth = 0;
+  while (current && typeof current === 'object' && 'response' in current && depth < 6) {
+    current = current.response;
+    depth += 1;
+  }
+  return current;
+};
+const normalized = unwrapResponse(body);
+
 // Handle common output shapes
 const output =
-  body?.output ??
-  body?.result ??
-  body?.value ??
-  body;
+  normalized?.output ??
+  normalized?.result ??
+  normalized?.value ??
+  normalized;
 
 if (typeof output === 'number') {
   // numeric output
@@ -93,11 +113,16 @@ Use `packagesMapping` and define full parameter/output contracts.
 }
 ```
 
+Version pinning rule:
+- If the user expects a fixed package build, set `"version": "x.y.z"` explicitly in each `packagesMapping` entry.
+- Do not leave `version` as `null` unless the user explicitly wants unpinned/latest behavior.
+
 ## Required contract disclosure to user
 
 When recommending or generating Code Engine calls, the agent must explicitly tell the user:
 - exact input parameter names, types, and `nullable` expectations
 - expected output name, type, and shape (number/string/object)
+- whether output is wrapped in a `response` envelope (and if nested envelopes are possible)
 
 This is required so the user can build a matching Code Engine function and manifest contract.
 
@@ -116,18 +141,13 @@ async function executeFunction(alias: string, payload: Record<string, unknown>) 
 }
 ```
 
-## Canonical Rules References
-
-- Toolkit patterns: `.cursor/rules/04-toolkit.mdc`
-- Manifest mapping details: `.cursor/rules/06-manifest.mdc`
-- Operational gotchas: `.cursor/rules/09-gotchas.mdc`
-
 ## Checklist
 - [ ] Calls use `domo.post('/domo/codeengine/v2/packages/{alias}', params)` pattern
 - [ ] Manifest uses `packagesMapping` (not `packageMapping`)
+- [ ] `packagesMapping.version` is explicitly pinned when deterministic package behavior is required
 - [ ] `packagesMapping.parameters` and `output` include full contract fields (`name`, `displayName`, `type`, `value`, `nullable`, `isList`, `children`, `entitySubType`, `alias`)
 - [ ] Agent states input parameter names, types, and nullable status to user
 - [ ] Agent states expected output name/type/shape to user
 - [ ] First implementation logs response and validates real response shape
-- [ ] Output parsing handles `body`/`data`/raw response shape
+- [ ] Output parsing handles `body`/`data`/raw response shape and nested `response` envelopes
 - [ ] Errors handled and surfaced to UI or logs

@@ -9,6 +9,11 @@ The `manifest.json` file is critical - it declares all external resources your a
 1. Know which datasets, collections, workflows, and code engine functions to connect
 2. Map aliases (used in your code) to actual Domo resource IDs (configured at publish time)
 
+For package create/update lifecycle details that feed `packagesMapping`, use:
+
+- `skills/cli/code-engine-create/SKILL.md`
+- `skills/cli/code-engine-update/SKILL.md`
+
 ## Basic structure
 ```json
 {
@@ -59,6 +64,19 @@ The `manifest.json` file is critical - it declares all external resources your a
 - Use `dataSetId` (not `id`) for the dataset identifier
 - `fields` array is **required** - must be present even if empty `[]`
 - Omitting `fields` causes: `Cannot read properties of undefined (reading 'map')`
+- Alias names must be identifier-safe: letters/numbers only (recommended `^[A-Za-z][A-Za-z0-9]*$`)
+- Do not use spaces, hyphens, dots, or other special characters in aliases
+
+## Alias naming constraints (all mappings)
+
+Applies to dataset aliases, Code Engine aliases, workflow aliases, and any alias your app code references.
+
+```text
+✅ Good: storeSales, Sales2026, RevenuePulse
+❌ Bad: store-sales, store sales, store.sales, store@sales
+```
+
+If an alias includes special characters, runtime calls can fail or mappings can be hard to resolve consistently.
 
 ## Code Engine packagesMapping structure
 
@@ -104,3 +122,26 @@ Code Engine manifest gotchas:
 - Use `packagesMapping` (with `s`), not `packageMapping`.
 - Include full contract fields on each parameter and output.
 - Ensure parameter names/types/nullability match what app code actually sends.
+- Set explicit `packagesMapping[].version` (for example `"1.0.0"`) when you want deterministic behavior.
+- `version: null` is treated as unpinned/latest behavior and will usually remain/display as `null` after publish.
+
+## Collection Mapping Structure (`collectionsMapping`)
+
+When wiring an app to an existing AppDB collection in published manifests, use `collectionsMapping` entries with `id` + `name`.
+
+```json
+{
+  "collectionsMapping": [
+    {
+      "id": "47bd2c9e-b22d-4436-8265-4798be8b218e",
+      "name": "RandomFunIdeas",
+      "syncEnabled": false
+    }
+  ]
+}
+```
+
+Collection mapping gotchas:
+- Do not use ad-hoc keys like `alias` + `collectionId` in `collectionsMapping`; this can fail manifest parsing.
+- `name` is required for mapped collection objects.
+- For existing collection wiring, default `syncEnabled` to `false` unless app requirements explicitly call for synchronized dataset behavior.

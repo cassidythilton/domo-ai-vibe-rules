@@ -35,6 +35,11 @@ cd dist              # Change to build output directory
 domo publish         # Publish to Domo
 ```
 
+If publish includes new/updated Code Engine packages, run package lifecycle steps first via:
+
+- `skills/cli/code-engine-create/SKILL.md`
+- `skills/cli/code-engine-update/SKILL.md`
+
 **Important - First publish:**
 - On first publish, Domo generates a new `id` for your app
 - This ID appears in the published `manifest.json` in your dist folder

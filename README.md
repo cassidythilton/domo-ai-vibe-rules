@@ -37,7 +37,7 @@ Domo is a broad platform — "data query" means something completely different w
 | `connectors/` | Custom Connector IDE |
 | `skill-orchestration/` | End-to-end orchestration runbooks that reference other skills in order |
 | `documents/` | Document and slide deck generation |
-| `cli/` | Command-line tooling (future) |
+| `cli/` | Command-line tooling and lifecycle workflows |
 
 More directories can be added as new skills are contributed.
 
@@ -84,6 +84,12 @@ More directories can be added as new skills are contributed.
 
 - `connector-dev` — Connector IDE auth/data processing patterns (not for Domo app/card builds).
 
+### CLI (`skills/cli/`)
+
+- `code-engine-create` — CLI-first Code Engine package creation and datatype contract mapping.
+- `code-engine-update` — CLI-first Code Engine package update/version workflows and drift synchronization.
+- `appdb-collection-create` — CLI-first AppDB collection creation workflow that includes required datastore provisioning.
+
 ## Repository Structure
 
 ```text
@@ -108,7 +114,8 @@ skills/
 
 rules/
 ├── core-custom-apps-rule.md
-└── custom-app-gotchas.md
+├── custom-app-gotchas.md
+└── default-theme-rule.md
 ```
 
 ## Rules Philosophy
@@ -133,17 +140,19 @@ If you are non-technical, use this mental model:
 
 1. Open your app project in Cursor.
 2. Make sure your project has a `.cursor/rules/` folder.
-3. Copy both files from this repo's `rules/` folder into your project’s `.cursor/rules/`:
+3. Copy these files from this repo's `rules/` folder into your project’s `.cursor/rules/`:
    - `core-custom-apps-rule.md`
    - `custom-app-gotchas.md`
+   - `default-theme-rule.md`
 
 #### Claude Code users (simple steps)
 
 1. Open your app project.
 2. Create a `rules/` folder in your project root (if it does not exist).
-3. Copy both files from this repo's `rules/` folder into your project `rules/` folder:
+3. Copy these files from this repo's `rules/` folder into your project `rules/` folder:
    - `core-custom-apps-rule.md`
    - `custom-app-gotchas.md`
+   - `default-theme-rule.md`
 
 #### Easiest option: ask your agent to do it for you
 
@@ -152,7 +161,7 @@ You can paste this directly to your agent:
 ```text
 Please install this Domo package for me:
 1) Install skills from stahura/domo-ai-vibe-rules using npx skills add.
-2) Copy rules/core-custom-apps-rule.md and rules/custom-app-gotchas.md into my project rules location.
+2) Copy rules/core-custom-apps-rule.md, rules/custom-app-gotchas.md, and rules/default-theme-rule.md into my project rules location.
 3) Verify files are in place and tell me done.
 ```
 

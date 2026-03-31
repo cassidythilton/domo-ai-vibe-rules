@@ -170,6 +170,34 @@ Apply when: debugging errors (e.g. [object Object], DA0057, “reading 'map' of 
     AppDBClient.DocumentsClient.get();
     ```
 
+16. **Code Engine can return nested `response` envelopes**
+    - Some contracts return `{ response: {...} }`, others can return `{ response: { response: {...} } }`
+    - If UI shows empty values but network response has data, unwrap recursively before reading fields
+    ```typescript
+    const unwrapResponse = (value: any) => {
+      let current = value;
+      let depth = 0;
+      while (current && typeof current === 'object' && 'response' in current && depth < 6) {
+        current = current.response;
+        depth += 1;
+      }
+      return current;
+    };
+    ```
+
+17. **AppDB REST collection path uses collection name, not UUID**
+    - For `/domo/datastores/v1/collections/{...}/documents`, use collection name (for example `RandomFunIdeas`)
+    - Passing UUID often throws: `DA0088: Invalid collection name`
+
+18. **Alias names must not contain special characters**
+    - Applies to dataset aliases and other manifest aliases used in runtime calls
+    - Prefer: `^[A-Za-z][A-Za-z0-9]*$`
+    - Avoid spaces, hyphens, dots, and symbols (for example `store-sales`, `store sales`)
+
+19. **`packagesMapping.version: null` stays null after publish**
+    - This is not a publish blocker; it is an unpinned mapping choice
+    - If you want deterministic package mapping, set explicit semantic version string (for example `"1.0.0"`)
+
 ## Debugging Tips
 
 ```javascript
