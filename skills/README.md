@@ -14,6 +14,7 @@ Current feature groups:
 - `documents/`
 - `domo-everywhere/`
 - `skill-orchestration/`
+- `themes/`
 
 CLI skills currently available:
 

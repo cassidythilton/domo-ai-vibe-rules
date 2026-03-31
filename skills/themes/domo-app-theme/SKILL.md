@@ -1,3 +1,8 @@
+---
+name: domo-app-theme
+description: Clean, professional dashboard theme for Domo custom apps. CSS custom properties, layout patterns, and typography that feel native to the Domo platform.
+---
+
 # Domo Custom App Theme
 
 A clean, professional dashboard theme used across Domo custom apps. Designed to feel native to the Domo platform while being modern and readable. Corporate but not sterile — hierarchy comes from font weight and subtle shadows rather than color. Feels Domo-native / Salesforce-adjacent.

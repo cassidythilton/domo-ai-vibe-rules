@@ -122,19 +122,19 @@ Apply when: debugging errors (e.g. [object Object], DA0057, “reading 'map' of 
 
 ## Development Issues
 
-9. **External URLs restricted**
+12. **External URLs restricted**
    - Must whitelist domains in Admin > Network Security
    - Fetch to external APIs will fail silently otherwise
 
-10. **Navigation on mobile**
+13. **Navigation on mobile**
     - Routes auto-prefix with `/m#`
     - Always use `domo.navigate()`, not `window.location` or `<a>` tags
 
-11. **Mobile apps are double iframes**
+14. **Mobile apps are double iframes**
     - Domo mobile app embeds your app in iframe within its webview
     - Can cause viewport/scroll challenges
 
-12. **AppDB sync is not instant**
+15. **AppDB sync is not instant**
     - Default sync to dataset is every 15 minutes
     - Call sync endpoint if you need immediate availability:
     ```javascript
