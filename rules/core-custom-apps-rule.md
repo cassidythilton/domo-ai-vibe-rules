@@ -37,7 +37,7 @@ alwaysApply: true
 - Files / Filesets / Groups / User / Task Center
 
 ## Skill routing
-- New app build playbook -> `skills/skill-orchestration/initial-build/SKILL.md`
+- New app build playbook -> `skills/orchestrator-skills/basic-app-build/SKILL.md`
 - Dataset querying -> `skills/apps/dataset-query/SKILL.md`
 - Data API overview -> `skills/apps/data-api/SKILL.md`
 - domo.js usage -> `skills/apps/domo-js/SKILL.md`

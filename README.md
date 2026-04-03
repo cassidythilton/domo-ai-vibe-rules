@@ -22,7 +22,7 @@ Skills install into `~/.claude/skills/` on your machine. This folder is hidden b
 npx skills add https://github.com/stahura/domo-ai-vibe-rules/skills
 ```
 
-For new Domo app builds, ask your agent to start with the `initial-build` skill first — it sequences the other skills for you.
+For new Domo app builds, ask your agent to start with the `basic-app-build` skill first — it sequences the other skills for you.
 
 ## Why This Organization
 
@@ -35,22 +35,22 @@ Domo is a broad platform — "data query" means something completely different w
 | `apps/` | Domo App Platform custom apps |
 | `domo-everywhere/` | Embedding Domo content in external applications |
 | `connectors/` | Custom Connector IDE |
-| `skill-orchestration/` | End-to-end orchestration runbooks that reference other skills in order |
+| `orchestrator-skills/` | End-to-end orchestration runbooks that reference other skills in order |
 | `documents/` | Document and slide deck generation |
 | `cli/` | Command-line tooling and lifecycle workflows |
 | `themes/` | UI theme reference and design tokens |
 
 More directories can be added as new skills are contributed.
 
-### Skill orchestration vs. skills
+### Orchestrator skills vs. skills
 
-**Skill orchestration** skills are end-to-end orchestration skills that reference sub-skills to perform many Domo operations in sequence (e.g. building an app from scratch). Regular skills are atomic — one API, one tool, one concept. Orchestration skills compose them.
+**Orchestrator skills** are end-to-end orchestration skills that reference sub-skills to perform many Domo operations in sequence (e.g. building an app from scratch). Regular skills are atomic — one API, one tool, one concept. Orchestrator skills compose them.
 
 ## Available Skills
 
-### Skill Orchestration (`skills/skill-orchestration/`)
+### Orchestrator Skills (`skills/orchestrator-skills/`)
 
-- `initial-build` — Kickoff sequence for new Domo app builds; routes to the right rules and skills in order.
+- `basic-app-build` — Kickoff sequence for new Domo app builds; routes to the right rules and skills in order.
 
 ### Apps (`skills/apps/`)
 
@@ -111,8 +111,8 @@ skills/
 │   └── embed-portal/SKILL.md
 ├── connectors/
 │   └── connector-dev/SKILL.md
-├── skill-orchestration/
-│   └── initial-build/SKILL.md
+├── orchestrator-skills/
+│   └── basic-app-build/SKILL.md
 ├── documents/
 │   └── html-deck/SKILL.md
 ├── cli/
