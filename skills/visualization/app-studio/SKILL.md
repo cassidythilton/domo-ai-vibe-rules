@@ -921,7 +921,7 @@ Every page should follow this vertical structure from top to bottom:
 ```
 y=0:   BANNER (pro-code, per-page design) — full width (60), height 14, style ca8
 y=14:  FILTER CARDS — 2-3 dropdown selectors, width 20 each, height 6 (low-profile)
-y=20:  HERO METRICS ROW — 3-4 native badge_pop_multi_value cards in ONE ROW (width 20 for 3, or 15 for 4), height 14, style ca1
+y=20:  HERO METRICS ROW — 3-4 native badge_pop_multi_value cards in ONE ROW (width 20 for 3, or 15 for 4), height 12, style ca1
 y=34:  HEADER — section title (e.g., "Production Output"), height 4
 y=38:  PRIMARY VIZ — full width (60), height 30, style ca1
 y=68:  HEADER — section title (e.g., "Quality & Waste"), height 4
