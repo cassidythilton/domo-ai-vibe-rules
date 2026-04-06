@@ -357,8 +357,12 @@ Joins two upstream actions on specified keys.
   "id": "MergeJoin-accounts-opps",
   "name": "Join Accounts & Opp Summary",
   "dependsOn": ["LoadFromVault-accounts", "GroupBy-opp-summary"],
+  "disabled": false,
+  "removeByDefault": false,
+  "notes": [],
   "settings": {"preferredDatabaseEntityType": "TEMP_VIEW"},
   "gui": {"x": 576, "y": 320, "color": null, "colorSource": null, "sampleJson": null},
+  "previewRowLimit": null,
   "joinType": "LEFT OUTER",
   "relationshipType": "MTM",
   "step1": "LoadFromVault-accounts",
@@ -369,8 +373,7 @@ Joins two upstream actions on specified keys.
   "schemaModification1": [],
   "schemaModification2": [
     {"name": "AccountId", "rename": "Opp_AccountId", "remove": true}
-  ],
-  "tables": [{}]
+  ]
 }
 ```
 
@@ -873,7 +876,7 @@ Selects specific columns and optionally renames them.
 - Only columns listed in `select` are passed through; all others are dropped
 - Omit `rename` to keep the original column name
 
-**Alternative format** (from other verified dataflows) — uses `fields` instead of `select`, with explicit `remove` control:
+**Alternative format** — uses `fields` instead of `select`. **Only list columns you want to KEEP** (with optional rename). Unlisted columns are dropped. Do NOT add `remove: true` entries — they cause `DP-0003` validation errors.
 
 **Only list columns you want to KEEP** (with optional rename). Unlisted columns are dropped. Do NOT add `remove: true` entries — they cause `DP-0003` validation errors.
 
