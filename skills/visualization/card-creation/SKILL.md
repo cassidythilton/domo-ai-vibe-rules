@@ -1,3 +1,8 @@
+---
+name: card-creation
+description: Domo Product API for KPI card CRUD — chart types, columns, beast modes, overrides; curl and session auth patterns.
+---
+
 # Domo Card CRUD API Reference
 
 > **CLI vs API**: The Java CLI supports `backup-card` and `restore-card` for duplicating existing cards to new pages. **Try CLI first** for simple card copy operations. Fall back to this REST API when you need to create cards from scratch with full control over chart type, columns, beast modes, and overrides — or when CLI `restore-card` fails (it does not support all chart types).

@@ -1,7 +1,7 @@
 ---
-
-## name: variable-creation
-description: "Use this skill to create and manage Domo card variables (interactive controls). When a user needs a dropdown, slider, pill, textbox, or date picker control on a card — whether they call it a variable, control, parameter, or describe wanting dynamic/interactive filtering that isn't a standard filter — use this skill. Covers variable formula construction, validation, and the 3-step creation flow (create function template, register control, save card). Use this proactively when you notice a card would benefit from user-adjustable parameters."
+name: variable-creation
+description: Create and manage Domo card variables (dropdowns, sliders, pills); function templates, control registration, card save flow, curl or CLI.
+---
 
 # Variable Creation
 

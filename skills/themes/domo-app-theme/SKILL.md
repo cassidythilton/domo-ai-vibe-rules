@@ -1,7 +1,7 @@
 ---
-
-## name: domo-app-theme
+name: domo-app-theme
 description: Clean, professional dashboard theme for Domo custom apps. CSS custom properties, layout patterns, typography, and design polish that feel native to the Domo platform. Includes OKLCH color palette, layered shadows, concentric border radius, tabular numbers, and micro-interaction patterns.
+---
 
 # Domo Custom App Theme
 

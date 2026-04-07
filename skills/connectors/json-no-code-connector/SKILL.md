@@ -1,3 +1,8 @@
+---
+name: json-no-code-connector
+description: Domo JSON (no-code) connector via Product API — accounts, streams, executions for REST/JSON API ingestion into Domo.
+---
+
 # Domo JSON Connector — Product API Reference
 
 > **Primary data ingestion path for REST/JSON APIs.** Always try the JSON connector first when the source is a REST API. If it fails (auth, parsing, or pagination issues), fall back to the Java CLI (`domo-data-upload` skill). See that skill's guide for the two-path fallback pattern.

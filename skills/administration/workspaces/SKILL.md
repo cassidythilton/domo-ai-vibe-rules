@@ -1,3 +1,8 @@
+---
+name: workspaces
+description: Reverse-engineered Domo Workspace REST API — add, remove, list, and search workspace content via curl and developer token.
+---
+
 # Domo Workspace API (Reverse-Engineered)
 
 > **CLI vs API**: The Java CLI has no workspace commands. All workspace operations require the REST API via curl.

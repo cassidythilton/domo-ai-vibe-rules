@@ -1,3 +1,8 @@
+---
+name: data-upload-java-cli
+description: Java CLI (domoutil.jar) fallback for CSV upload to Domo; schema derivation, chunked uploads. Use when JSON connector is not suitable.
+---
+
 # Domo Data Upload Guide
 
 > **Preferred Strategy — JSON Connector first, CLI fallback:**

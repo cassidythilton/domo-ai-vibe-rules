@@ -1,7 +1,7 @@
 ---
-
-## name: beast-mode-generator
-description: "Use this skill to create and add beast modes (calculated fields) in Domo. When a user needs a field that doesn't currently exist in their data — whether they call it a calculated field, beast mode, derived column, or describe what to compute (profit margin, full name, status category, aggregation) — use this skill to validate the formula and generate API calls for adding it to a card or dataset. Covers MySQL-style formula construction, validation via the Domo API, and the two-step dataset-level flow. Use this proactively when you notice a visualization or card needs a field that isn't in the raw data."
+name: beast-mode-creation
+description: Create and validate Domo beast modes (calculated fields); MySQL-style formulas, API validation, card vs dataset scope, curl output.
+---
 
 # Beast Mode Generator
 
