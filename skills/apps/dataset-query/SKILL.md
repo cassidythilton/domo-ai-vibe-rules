@@ -13,6 +13,8 @@ description: Query-first dataset access with @domoinc/query including filters, g
 
 3. **Server-Side Processing** - Aggregations and filtering happen on Domo's servers, reducing data transfer and client-side processing.
 
+**Non-Query data access**: If your app bypasses `@domoinc/query` (e.g., Code Engine calls, raw SQL via `SqlClient`, or direct `/data/v1/` fetches without query parameters), page filters are NOT applied automatically. You must register `domo.onFiltersUpdated` (see `domo-js`) and pass filter values as parameters to your data source manually. The same applies to App Studio variables — use `domo.onVariablesUpdated` to receive variable changes and incorporate them into your queries.
+
 The Query library provides a chainable API for building complex data queries. It constructs URLs that work with `domo.get()` and the `/data/v1/` endpoint.
 
 **npm/yarn:**

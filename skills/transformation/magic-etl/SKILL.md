@@ -1,3 +1,8 @@
+---
+name: magic-etl
+description: Create, update, and execute Magic ETL dataflows programmatically via API and CLI. Covers DAG-based JSON dataflow definitions, input/transform/output node wiring, join operations, and execution lifecycle.
+---
+
 # Creating Magic ETL Dataflows Programmatically in Domo
 
 ## Overview
@@ -12,11 +17,11 @@ Magic ETL dataflows in Domo can be created, updated, and executed entirely throu
 | Export dataflow definition | `list-dataflow -i <ID> -d -f <FILE>` | — |
 | Run a dataflow | `dataflow-run-now -i <ID>` | `POST .../executions` (more reliable for new dataflows) |
 | Check execution status | `list-dataflow -i <ID> -e -l 1` | `GET .../executions?limit=1` |
-| **Create** a dataflow | `set-dataflow-properties -d <file> -c` (but gets 403 with dev tokens) | `POST /api/dataprocessing/v1/dataflows` (requires SID auth, creates in DRAFT) |
+| **Create** a dataflow | — | `POST /api/dataprocessing/v1/dataflows` (dev token works, executes immediately) |
 | **Update** a dataflow | `set-dataflow-properties -i <id> -d <file>` | `PUT /api/dataprocessing/v1/dataflows/<ID>` |
 | **Rename/enable** | `set-dataflow-properties -i <id> -n/-e/-s` | `PUT /api/dataprocessing/v1/dataflows/<ID>/patch` |
 
-**Important:** Creating dataflows via API (POST) requires SID auth and produces a DRAFT dataflow that cannot be executed until saved once in the Domo UI. The CLI's create command (`-d <file> -c`) calls the same endpoint but fails with dev token auth (403). The CLI can export, rename, enable/disable, and run existing dataflows.
+**Important:** Creating dataflows via API (POST) works with developer tokens (confirmed April 2026). The created dataflow can be executed immediately — no UI save required. The `domo` (ryuu) CLI is for Custom App publishing only; use the Java CLI (`domoutil.jar`) for dataflow operations.
 
 ## CLI Commands for Dataflows
 
@@ -71,9 +76,9 @@ Content-Type: application/json
 X-Domo-Authentication: <SID>
 ```
 
-The body **must** include `"databaseType": "MAGIC"`. The created dataflow will be in DRAFT state — see Gotcha #7 and #11 for limitations.
+The body **must** include `"databaseType": "MAGIC"`. The created dataflow can be executed immediately — see Gotcha #7 and #11 for details.
 
-> **Note:** `x-domo-developer-token` works for GET (list/read) and for updating/running **existing** (non-DRAFT) dataflows, but not for POST (create).
+> **Note:** `x-domo-developer-token` works for all dataflow operations including POST (create), GET, PUT, and execution (confirmed April 2026).
 
 ### Updating an Existing Dataflow
 
@@ -116,6 +121,111 @@ Same headers and body format as POST. Include the full definition.
 | `inputs` | Array of input dataset references |
 | `outputs` | Array of output dataset references |
 | `actions` | Array of action nodes (the DAG) |
+
+### Top-Level `gui` Field (Canvas Layout & Sections)
+
+The `gui` field controls the visual canvas layout, including colored **Section** zones that group related tiles. When `useGraphUI: true`, the canvas `elements` array controls tile positioning (overriding action-level `gui.x`/`gui.y`).
+
+```json
+{
+  "gui": {
+    "version": "1.0",
+    "canvases": {
+      "default": {
+        "canvasSettings": {
+          "coarserGrid": false,
+          "hideCoarserGridPopUp": false,
+          "backgroundVariant": "None"
+        },
+        "elements": [
+          { "type": "Section", ... },
+          { "type": "Tile", ... }
+        ],
+        "disabledActions": []
+      }
+    },
+    "useGraphUI": true
+  }
+}
+```
+
+#### Section Elements (Colored Zone Backgrounds)
+
+Sections are colored rectangular zones that visually group related tiles on the canvas:
+
+```json
+{
+  "id": "a-unique-uuid",
+  "type": "Section",
+  "x": 56,
+  "y": 72,
+  "width": 1320,
+  "height": 288,
+  "name": "Work Orders Denormalization",
+  "backgroundColor": "var(--colorChartBlue6)"
+}
+```
+
+| Field | Description |
+|---|---|
+| `id` | Unique UUID for the section |
+| `type` | Must be `"Section"` |
+| `x`, `y` | Absolute position on the canvas (top-left corner) |
+| `width`, `height` | Size of the colored zone in pixels |
+| `name` | Label displayed in the section header |
+| `backgroundColor` | CSS variable for the zone color (see table below) |
+
+#### Available Section Background Colors
+
+| CSS Variable | Color | Suggested Use |
+|---|---|---|
+| `var(--colorChartBlue6)` | Light blue | Input/staging pipelines |
+| `var(--colorChartGreen6)` | Light green | Quality/validation pipelines |
+| `var(--colorChartPurple6)` | Light purple | Output/publishing pipelines |
+| `var(--colorChartOrange6)` | Light orange | Transform/enrichment pipelines |
+| `var(--colorChartRed6)` | Light red | Filter/exclusion pipelines |
+| `var(--colorChartYellow6)` | Light yellow | Shared/dimension tables |
+
+The `6` suffix indicates the lightest shade — ideal for section backgrounds so tile labels remain readable.
+
+#### Tile Elements (Action Positions)
+
+Each action node has a corresponding `Tile` element in the canvas. Tiles can be **parented** inside a Section, in which case their `x`/`y` are **relative to the Section's position**:
+
+```json
+{
+  "id": "LoadFromVault-work_orders",
+  "type": "Tile",
+  "x": 72,
+  "y": 56,
+  "parentId": "section-uuid-here",
+  "color": null,
+  "colorSource": null
+}
+```
+
+| Field | Description |
+|---|---|
+| `id` | Must match the action's `id` field |
+| `type` | Must be `"Tile"` |
+| `x`, `y` | Position — **absolute** if no `parentId`, **relative to parent Section** if `parentId` is set |
+| `parentId` | UUID of the parent Section element (omit for unparented tiles) |
+| `color` | Optional integer color code for the tile icon |
+
+**Reparenting formula:** When moving a tile into a section, convert absolute to relative coordinates:
+- `relativeX = absoluteX - section.x`
+- `relativeY = absoluteY - section.y`
+
+Tiles without `parentId` render at absolute canvas coordinates and float outside any section.
+
+#### ALWAYS Add Sections When Creating Dataflows
+
+When building a dataflow with multiple logical branches or processing stages, **always add Section elements** to organize the visual layout. This is a best practice that makes dataflows immediately understandable. Group tiles by:
+- **Pipeline branch** (e.g., each fact table's join chain gets its own section)
+- **Processing stage** (e.g., "Input/Staging", "Transforms", "Output")
+- **Shared resources** (e.g., dimension tables used across branches)
+
+Assign a distinct color to each section for visual differentiation.
 
 ### Inputs Array
 
@@ -202,7 +312,7 @@ Every action has these fields:
 |---|---|
 | `id` | Unique identifier for this action node. Can be any string, but convention is `TypeName-uuid` |
 | `dependsOn` | Array of action IDs that must complete before this one runs |
-| `gui.x` / `gui.y` | Position in the visual Magic ETL canvas. Space nodes ~224px apart horizontally |
+| `gui.x` / `gui.y` | Position in the visual canvas. When `useGraphUI: true`, the top-level `gui.canvases.default.elements` array takes precedence — set both to stay consistent |
 | `settings.preferredDatabaseEntityType` | Always `"TEMP_VIEW"` |
 | `tables` | Always `[{}]` |
 
@@ -768,6 +878,8 @@ Selects specific columns and optionally renames them.
 
 **Alternative format** — uses `fields` instead of `select`. **Only list columns you want to KEEP** (with optional rename). Unlisted columns are dropped. Do NOT add `remove: true` entries — they cause `DP-0003` validation errors.
 
+**Only list columns you want to KEEP** (with optional rename). Unlisted columns are dropped. Do NOT add `remove: true` entries — they cause `DP-0003` validation errors.
+
 ```json
 "fields": [
   {"name": "ID", "rename": "Dataflow ID"},
@@ -1106,6 +1218,8 @@ For `MergeJoin`, the `dependsOn` array must contain both `step1` and `step2` act
 
 The `gui.x` and `gui.y` values determine where nodes appear in the Domo Magic ETL visual editor. Space nodes approximately 224px apart horizontally and 192px vertically for a clean layout. Input nodes typically start at `x: 128`.
 
+When `useGraphUI: true` is set (the modern canvas mode), tile positions are controlled by the `gui.canvases.default.elements` array at the top level — not by the action-level `gui` fields. Always set both to stay consistent. See the "Top-Level `gui` Field" section for the full Section and Tile element schema.
+
 ### 7. Dataflow Creation via API — Auth (Updated April 2026)
 
 **Auth:** `POST /api/dataprocessing/v1/dataflows` works with developer tokens (`DDCI...`) on most instances (confirmed April 2026). The body **must** include `"databaseType": "MAGIC"`. The created dataflow is NOT in DRAFT state and can be executed immediately via API — no UI save required.
@@ -1242,8 +1356,9 @@ All action types discovered across existing dataflows in the instance:
 ### Build Steps
 1. **Get input dataset schemas** — `POST /api/query/v1/execute/<UUID>` with `{"sql": "SELECT * FROM table LIMIT 2"}` on each input dataset
 2. **Build the JSON definition** — use the confirmed working action structures from this skill doc
-3. **Create via API** — `POST /api/dataprocessing/v1/dataflows` with dev token — works immediately, no UI save needed
-4. **Execute** — `POST /api/dataprocessing/v1/dataflows/<ID>/executions`
-5. **Check status** — `GET /api/dataprocessing/v1/dataflows/<ID>/executions/<EXEC_ID>` — poll until `state` is `SUCCESS` or `FAILED_DATA_FLOW`
-6. **On failure** — check `errors[]` array in execution response for `actionId` and `localizedMessage`, fix the specific action, `PUT` the updated definition, re-run
-7. **Export for debugging** — `GET /api/dataprocessing/v1/dataflows/<ID>` returns the full saved definition including any server-assigned GUIDs
+3. **Add colored Section zones** — group related tiles into Section elements in `gui.canvases.default.elements`. Assign each logical branch or processing stage a distinct color. Reparent Tile elements into their sections using `parentId` and relative coordinates. This step is **required** for all dataflows with 2+ branches or stages.
+4. **Create via API** — `POST /api/dataprocessing/v1/dataflows` with dev token — works immediately, no UI save needed
+5. **Execute** — `POST /api/dataprocessing/v1/dataflows/<ID>/executions`
+6. **Check status** — `GET /api/dataprocessing/v1/dataflows/<ID>/executions/<EXEC_ID>` — poll until `state` is `SUCCESS` or `FAILED_DATA_FLOW`
+7. **On failure** — check `errors[]` array in execution response for `actionId` and `localizedMessage`, fix the specific action, `PUT` the updated definition, re-run
+8. **Export for debugging** — `GET /api/dataprocessing/v1/dataflows/<ID>` returns the full saved definition including any server-assigned GUIDs

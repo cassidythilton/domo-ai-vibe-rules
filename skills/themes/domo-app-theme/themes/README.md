@@ -1,105 +1,82 @@
-# Domo App Studio Theme Catalog
+# DESIGN.md Theme System
 
-31 production-ready DESIGN.md theme files. Each contains a complete design system: color palette with slot mapping, typography, card styles, navigation, chart series, agent prompt guide, and importable App Studio Theme JSON.
+## Overview
 
-## Theme Index
+This directory contains pre-built `DESIGN.md` theme specifications for Domo App Studio apps. Each file is a complete, self-contained design document that an AI agent consumes to build a fully-themed App Studio app — including native Domo theme JSON, pro-code CSS variables, chart palettes, and navigation styling.
 
-### Production Themes (4 original)
+## Architecture
 
-| Theme | Mode | Accent Family | Font | File |
-|-------|------|--------------|------|------|
-| Corporate Light | Light | Cool blue-gray | Sans | `corporate-light.DESIGN.md` |
-| Charcoal Ember Dark | Dark | Warm ember/orange | Sans | `charcoal-ember-dark.DESIGN.md` |
-| Emerald Dark | Dark | Emerald green | Sans | `emerald-dark.DESIGN.md` |
-| Neon Magenta Dark | Dark | Hot pink/magenta | Sans | `neon-magenta-dark.DESIGN.md` |
+The system has three layers:
 
-### Extracted Themes (2 from production JSON)
+| Layer | Purpose | Artifact |
+|-------|---------|----------|
+| **1. DESIGN.md** | Single source of truth for a theme's visual identity | `*.DESIGN.md` files in this directory |
+| **2. App Studio Theme JSON** | Native Domo schema (`c1`–`c60` color slots, `f1`–`f8` fonts, `ca1`–`ca8` card styles) | Embedded in each DESIGN.md under "Importable Theme JSON" |
+| **3. Pro-Code CSS** | Custom properties for iframe-based chart/banner components | Derived from DESIGN.md color system at build time |
 
-| Theme | Mode | Accent Family | Font | File |
-|-------|------|--------------|------|------|
-| BC Forest Light | Light | Deep forest green | Sans | `bc-forest-light.DESIGN.md` |
-| CH Charcoal Light | Light | Warm charcoal + lavender/steel/teal | Mono title / Condensed caption / Sans | `ch-charcoal-light.DESIGN.md` |
+All three layers must stay synchronized. The DESIGN.md is the Rosetta Stone that maps between them.
 
-### Expanded Catalog (17 new)
+## Theme Catalog
 
-#### Dark Counterparts
+### Production Themes
 
-| Theme | Mode | Accent Family | Font | File |
-|-------|------|--------------|------|------|
-| BC Forest Dark | Dark | Mint green on forest black | Sans | `bc-forest-dark.DESIGN.md` |
-| CH Charcoal Dark | Dark | Lavender/steel/teal on warm charcoal | Mono/Condensed/Sans | `ch-charcoal-dark.DESIGN.md` |
+| Theme | Mode | Accent | Best For |
+|-------|------|--------|----------|
+| `corporate-light` | Light | Cool blue-gray | Enterprise dashboards, financial reporting |
+| `charcoal-ember-dark` | Dark | Warm orange/ember | Executive dashboards, operations monitoring |
+| `emerald-dark` | Dark | Green/emerald | Environmental, sustainability, growth metrics |
+| `neon-magenta-dark` | Dark | Hot pink/magenta | Healthcare, creative analytics, engagement |
+| `cyberpunk` | Dark | Neon cyan | Technology, SaaS, developer tools |
+| `solarpunk` | Light | Leaf green | Sustainability, agriculture, community |
 
-#### Warm Light Themes
+### Subgenre Themes
 
-| Theme | Mode | Accent Family | Font | File |
-|-------|------|--------------|------|------|
-| Terracotta Sand | Light | Desert terracotta + dusty peach | Serif | `terracotta-sand.DESIGN.md` |
-| Copper Patina | Light | Verdigris teal + copper | Sans | `copper-patina.DESIGN.md` |
-| Blush Rose | Light | Dusty rose + warm gold | Serif title / Sans body | `blush-rose.DESIGN.md` |
+| Theme | Mode | Accent | Feel |
+|-------|------|--------|------|
+| `steampunk` | Dark | Polished brass/copper | Vintage industrial, mechanical aesthetic |
+| `dieselpunk` | Dark | Rust orange | Heavy industry, power, raw materials |
+| `atompunk` | Light | Atomic orange | Retro-futurism, mid-century optimism |
+| `biopunk` | Dark | Toxic green | Biotech, laboratory, experimental |
+| `dreadpunk` | Dark | Deep crimson | Risk management, security, incident response |
+| `dungeonpunk` | Dark | Arcane amber/gold | Fantasy-inspired, gamification |
 
-#### Cool Professional Themes
+### Palette Overlays
 
-| Theme | Mode | Accent Family | Font | File |
-|-------|------|--------------|------|------|
-| Midnight Navy | Light | Steel blue on ice canvas | Condensed heading / Sans | `midnight-navy.DESIGN.md` |
-| Slate Granite | Light | True neutral gray + mint teal | Sans + Mono numbers | `slate-granite.DESIGN.md` |
-| Arctic Frost | Light | Ice blue, light nav | Sans | `arctic-frost.DESIGN.md` |
+`palette-overlays.md` provides chart color palette swaps for the Corporate Light base theme. Use when the full DESIGN.md aesthetic is right but chart series colors need variety.
 
-#### Bold & Saturated Themes
+## How It Works
 
-| Theme | Mode | Accent Family | Font | File |
-|-------|------|--------------|------|------|
-| Indigo Velvet | Dark | Lavender + gold | Sans | `indigo-velvet.DESIGN.md` |
-| Burgundy Editorial | Light | Wine burgundy + antique gold | Serif (all) | `burgundy-editorial.DESIGN.md` |
-| Electric Teal | Dark | Bright teal + coral | Monospace (all) | `electric-teal.DESIGN.md` |
+1. Agent reads the target `DESIGN.md` theme file
+2. Extracts the color system (hex values mapped to `c1`–`c60` slots)
+3. Applies the App Studio Theme JSON via `PUT /api/content/v1/dataapps/{appId}`
+4. Builds pro-code components (banners, charts) using the same hex values from the DESIGN.md
+5. Sets navigation icons from the verified icon catalog (133 names, documented in `app-studio/SKILL.md`)
+6. Sets font family across both native theme slots and pro-code CSS
 
-#### Nature & Organic Themes
+## Key Rules
 
-| Theme | Mode | Accent Family | Font | File |
-|-------|------|--------------|------|------|
-| Moss & Stone | Light | Olive + warm brown | Slab (all) | `moss-stone.DESIGN.md` |
-| Ocean Kelp | Dark | Seaweed green + seafoam | Sans + Condensed | `ocean-kelp.DESIGN.md` |
-| Golden Hour | Light | Golden amber + purple dusk | Serif (all) | `golden-hour.DESIGN.md` |
+- **Font family must match everywhere**: Theme `fonts[].family` and all pro-code `font-family` CSS must use the same family (Sans, Serif, or Slab)
+- **Pro-code colors are NOT inherited**: iframe-based components must explicitly use the DESIGN.md hex values — they don't inherit the App Studio theme
+- **`c60` AUTOMATIC_COLOR breaks dark mode**: On dark themes, replace all `c60` font color references with `c58`
+- **`c55`/`c56` must be set explicitly**: Page background color slots are not auto-derived — always set them to the intended page background hex
+- **Nav icons**: Only use names from the verified 133-icon catalog. Google Material names render as blank space
 
-#### Technical & Data-Dense Themes
+## Eval Results
 
-| Theme | Mode | Accent Family | Font | File |
-|-------|------|--------------|------|------|
-| Terminal Sage | Dark | Sage green on true black | Monospace (all) | `terminal-sage.DESIGN.md` |
-| Blueprint | Light | Blueprint blue, borders not shadows | Condensed (all) | `blueprint.DESIGN.md` |
-| Data Ink | Light | No decorative color (Tufte-inspired) | Serif body / Sans labels | `data-ink.DESIGN.md` |
+Five live App Studio apps were built to validate the DESIGN.md system:
 
-### Subgenre Themes (8)
+| Test | Use Case | Theme | Mode | First-Run Quality | Issues Found |
+|------|----------|-------|------|-------------------|--------------|
+| test-i | Retail | Charcoal Ember Dark | Dark | 3 fix iterations | Icons, page bg, nav order, c60 text |
+| test-j | Healthcare | Corporate Light | Light | 2 fix iterations | Banner bg, nav hover colors |
+| test-k | SaaS | Cyberpunk | Dark | 1 fix (theme PUT) | Unsupported theme properties |
+| test-m | Retail | Warm Copper (custom) | Light | Clean build | Palette swap post-build |
+| test-n | Healthcare | Neon Magenta Dark | Dark | Clean build, zero issues | None |
 
-| Theme | Mode | File |
-|-------|------|------|
-| Cyberpunk | Dark | `cyberpunk.DESIGN.md` |
-| Solarpunk | Light | `solarpunk.DESIGN.md` |
-| Steampunk | Light | `steampunk.DESIGN.md` |
-| Atompunk | Light | `atompunk.DESIGN.md` |
-| Biopunk | Dark | `biopunk.DESIGN.md` |
-| Dieselpunk | Dark | `dieselpunk.DESIGN.md` |
-| Dreadpunk | Dark | `dreadpunk.DESIGN.md` |
-| Dungeonpunk | Dark | `dungeonpunk.DESIGN.md` |
+**Trend**: Each successive test produced fewer issues as lessons were codified into skills. Test-n achieved zero-defect first-run output.
 
-## Coverage Matrix
+## Palette Overlay Strategy
 
-| Dimension | Count |
-|-----------|-------|
-| Total themes | 31 |
-| Light mode | 15 |
-| Dark mode | 16 |
-| Sans font | 16 |
-| Serif font | 4 |
-| Slab font | 2 |
-| Monospace font | 3 |
-| Condensed font | 2 |
-| Mixed font families | 4 |
-
-## How to Use
-
-1. Pick a theme from the catalog above
-2. Read the full DESIGN.md for the complete design system specification
-3. Import the Theme JSON (Section 8 in each file) into App Studio via the PUT theme endpoint
-4. Use the Pro-Code COLORS object (Section 7) in all pro-code components
-5. Match the font family CSS stack to the theme's font setting
+- **For themed requests** (user specifies a mood, aesthetic, or subgenre): Use the matching full `DESIGN.md` theme
+- **For generic requests** (user just wants "a dashboard"): Use `corporate-light.DESIGN.md` as the base, optionally applying a chart palette overlay from `palette-overlays.md`
+- **For new aesthetics**: Generate a new `DESIGN.md` following the established format — color system with slot mapping, typography, card styles, chart palette, and importable theme JSON
