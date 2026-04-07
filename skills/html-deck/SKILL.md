@@ -22,107 +22,30 @@ Deck Build Progress:
 - [ ] Phase 2: Content population (slides from source material)
 - [ ] Phase 3: Visual polish (spacing, typography, layout fixes)
 - [ ] Phase 4: Print-safe CSS
-- [ ] Phase 5: PDF converter script
+- [ ] Phase 5: PDF conversion (use bundled script; do not reimplement)
 - [ ] Phase 6: Verification (screenshot comparison)
 ```
 
 ## Phase 1 — Slide skeleton
+
+### Use the Domo theme
+
+Read [domo-theme.md](domo-theme.md) for the complete Domo-branded CSS, inline SVG logo, and HTML patterns. It contains:
+
+- **Full CSS** — all variables (`--domo-blue`, `--accent-green`, etc.), component classes (`.slide`, `.slide-header`, `.slide-footer`, `.cover-slide`, `.deck-table`, `.card`, `.flow-box`, etc.), and the print-safe `@media print` block.
+- **Inline Domo logo** — an SVG data URI so no external image file is needed. Use it in both the cover logo and every slide footer.
+- **Cover slide pattern** — gradient background with sparkle effects, large Domo logo top-left, title + bullets left, summary cards right.
+- **Content slide pattern** — header/content/footer anatomy with page numbers.
+- **Content slide with background** — the `has-bg` variant with `#DDE5ED` background.
+- **Flow diagram pattern** — four-phase pipeline with colored boxes and arrows.
+- **Accent color table** — which color to use for each element type.
 
 ### Dimensions
 
 Standard 16:9 widescreen. All sizing flows from two CSS variables:
 
 ```css
-:root {
-  --slide-w: 1024px;
-  --slide-h: 576px;
-}
-```
-
-### Base structure
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --slide-w: 1024px;
-    --slide-h: 576px;
-  }
-
-  body {
-    font-family: 'Open Sans', sans-serif;
-    background: #E8E8E8;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 32px;
-    padding: 32px;
-  }
-
-  .slide {
-    width: var(--slide-w);
-    height: var(--slide-h);
-    background: #FFFFFF;
-    position: relative;
-    overflow: hidden;
-    flex-shrink: 0;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
-  }
-
-  .slide-header {
-    padding: 28px 48px 0;
-  }
-  .slide-header h1 {
-    font-size: 28px;
-    font-weight: 800;
-    color: #1E1E1E;
-  }
-  .slide-header .subtitle {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: #7BAED4;
-    margin-top: 4px;
-    text-transform: uppercase;
-  }
-
-  .slide-footer {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    padding: 0 40px;
-  }
-
-  .slide-content {
-    padding: 20px 40px 0 40px;
-  }
-
-  /* Print-safe — CRITICAL */
-  @media print {
-    body { background: white; gap: 0; padding: 0; }
-    .slide {
-      box-shadow: none;
-      page-break-after: always;
-      page-break-inside: avoid;
-    }
-    *, *::before, *::after {
-      box-shadow: none !important;
-    }
-  }
-</style>
-</head>
-<body>
-  <!-- slides here -->
-</body>
-</html>
+:root { --slide-w: 1024px; --slide-h: 576px; }
 ```
 
 ### Slide anatomy
@@ -141,12 +64,14 @@ Every slide has three layers. The content area must respect header and footer bo
   <div class="slide-footer">
     <span class="confidential">Confidential</span>
     <span class="footer-line"></span>
-    <span class="domo-badge"><span class="page-num">1</span><img src="logo.png" alt="Logo"></span>
+    <span class="domo-badge"><span class="page-num">1</span><img src="DATA_URI_LOGO" alt="Domo"></span>
   </div>
 </div>
 ```
 
 **Content area positioning**: Use `position:absolute` with `top` (below header) and `bottom:52px` (above footer). This prevents content–footer overlap.
+
+**Domo logo**: Replace `DATA_URI_LOGO` with the inline SVG data URI from [domo-theme.md](domo-theme.md).
 
 ## Phase 2 — Content population
 
@@ -224,62 +149,17 @@ Additional print considerations:
 
 ## Phase 5 — PDF converter
 
-Use `puppeteer-core` with the system Chrome installation. Do not bundle Chromium — it avoids download issues and cache path mismatches.
+**Do not rewrite the converter from scratch.** This skill ships a maintained script: [references/convert-to-pdf.js](references/convert-to-pdf.js). Copy it into the user’s project or run it by path from the skill directory after install.
 
-```javascript
-const puppeteer = require("puppeteer-core");
-const path = require("path");
-const fs = require("fs");
-
-const SLIDE_W = 1024;
-const SLIDE_H = 576;
-
-function findChrome() {
-  const candidates = [
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
-    "/Applications/Chromium.app/Contents/MacOS/Chromium",
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-  ];
-  for (const p of candidates) {
-    if (fs.existsSync(p)) return p;
-  }
-  return null;
-}
-
-async function convertToPdf(inputHtml, outputPdf) {
-  const htmlPath = path.resolve(inputHtml);
-  const outputPath = outputPdf || htmlPath.replace(/\.html?$/i, ".pdf");
-  const chromePath = findChrome();
-
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: chromePath,
-    args: ["--no-sandbox"],
-  });
-
-  const page = await browser.newPage();
-  await page.setViewport({ width: SLIDE_W, height: SLIDE_H, deviceScaleFactor: 2 });
-  await page.goto(`file://${htmlPath}`, { waitUntil: "networkidle0", timeout: 30000 });
-  await page.evaluate(() => document.fonts.ready);
-  await new Promise((r) => setTimeout(r, 500));
-
-  await page.pdf({
-    path: outputPath,
-    width: `${SLIDE_W}px`,
-    height: `${SLIDE_H}px`,
-    margin: { top: 0, right: 0, bottom: 0, left: 0 },
-    printBackground: true,
-    preferCSSPageSize: false,
-    displayHeaderFooter: false,
-  });
-
-  await browser.close();
-}
+```bash
+npm install puppeteer-core
+node convert-to-pdf.js path/to/deck.html path/to/deck.pdf
+# optional second arg omitted => writes next to the HTML with .pdf extension
 ```
 
-**Key settings:**
+The script uses `puppeteer-core` with the **system Chrome** binary (not bundled Chromium), matching the approach below.
+
+**Key settings** (implemented in the script; change only if you have a deliberate reason):
 - `deviceScaleFactor: 2` — retina-crisp text.
 - `printBackground: true` — preserves colored backgrounds.
 - `margin: { top: 0, ... }` — no extra whitespace around slides.
@@ -295,7 +175,7 @@ async function convertToPdf(inputHtml, outputPdf) {
 }
 ```
 
-Use `puppeteer-core` (not `puppeteer`) to avoid downloading bundled Chromium.
+Use `puppeteer-core` (not `puppeteer`): the full `puppeteer` package downloads its own Chromium on install (~hundreds of MB) and uses that browser; `puppeteer-core` is the automation library only and expects you to pass `executablePath` to an existing Chrome/Chromium (this script finds system Chrome). Smaller install, one browser to update, fewer CI/cache issues.
 
 ## Phase 6 — Verification
 

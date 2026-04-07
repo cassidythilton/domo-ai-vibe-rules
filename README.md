@@ -19,8 +19,10 @@ Skills install into `~/.claude/skills/` on your machine. This folder is hidden b
 **Or run it yourself:**
 
 ```bash
-npx skills add https://github.com/stahura/domo-ai-vibe-rules/skills
+npx skills add https://github.com/stahura/domo-ai-vibe-rules/skills --all -g
 ```
+
+The `-g` flag installs skills globally so they are available in every project. Leave it off to install only in your current directory — but you will need to re-install in each new project you start.
 
 For new Domo app builds, ask your agent to start with the `basic-app-build` skill first — it sequences the other skills for you.
 
@@ -33,12 +35,16 @@ Domo is a broad platform — "data query" means something completely different w
 | Directory | Scope |
 |-----------|-------|
 | `apps/` | Domo App Platform custom apps |
+| `visualization/` | App Studio, pro-code visualizations, and native card creation |
 | `domo-everywhere/` | Embedding Domo content in external applications |
-| `connectors/` | Custom Connector IDE |
+| `connectors/` | Custom Connector IDE and data upload tools |
 | `orchestrator-skills/` | End-to-end orchestration runbooks that reference other skills in order |
 | `documents/` | Document and slide deck generation |
 | `cli/` | Command-line tooling and lifecycle workflows |
-| `themes/` | UI theme reference and design tokens |
+| `themes/` | UI theme reference, design tokens, and color palettes |
+| `transformation/` | Data transformation (Magic ETL) |
+| `datagen/` | Sample data generation and upload |
+| `administration/` | Instance and workspace administration |
 
 More directories can be added as new skills are contributed.
 
@@ -81,43 +87,80 @@ More directories can be added as new skills are contributed.
 
 - `html-deck` — Build HTML slide decks from source content and convert to pixel-perfect PDF via Puppeteer.
 
+### Visualization (`skills/visualization/`)
+
+- `app-studio` — Build and manage Domo App Studio apps via REST API. Covers app creation, view/page management, canvas layouts, card placement, dark mode theming, and multi-page dashboard configuration.
+- `app-studio-pro-code` — Build and embed pro-code JavaScript custom apps inside Domo App Studio pages. Covers library selection (React + Recharts / Chart.js), design patterns, chart type variety, dark mode CSS, banner background patterns, and App Studio variable integration.
+- `card-creation` — Create native Domo cards (KPI, bar, line, pie, table, etc.) via API with chart property configuration, beast mode calculations, and conditional formatting.
+
 ### Connectors (`skills/connectors/`)
 
-- `connector-dev` — Connector IDE auth/data processing patterns (not for Domo app/card builds). This skill needs to be called manually in order to apply correctly.  LLMs have a lot of knowledge in this area so they will try to do it themselves.  
+- `connector-dev` — Connector IDE auth/data processing patterns (not for Domo app/card builds). This skill needs to be called manually in order to apply correctly. LLMs have a lot of knowledge in this area so they will try to do it themselves.
+- `data-upload-java-cli` — Upload data to Domo datasets via the Java CLI (stream, dataset create/replace workflows).
+- `json-no-code-connector` — Build no-code JSON connectors for REST APIs with pagination, auth, and scheduling.
 
 ### CLI (`skills/cli/`)
 
 - `code-engine-create` — CLI-first Code Engine package creation and datatype contract mapping.
 - `code-engine-update` — CLI-first Code Engine package update/version workflows and drift synchronization.
 - `appdb-collection-create` — CLI-first AppDB collection creation workflow that includes required datastore provisioning.
+- `community-cli-howto` — Community Domo CLI usage, endpoint testing, and ryuu-session auth configuration.
 
 ### Themes (`skills/themes/`)
 
-- `domo-app-theme` — Clean, professional dashboard theme with CSS custom properties, layout patterns, and typography for Domo custom apps.
+- `domo-app-theme` — Clean, professional dashboard theme with CSS custom properties, layout patterns, typography, dark mode palettes, and OKLCH color system for Domo custom apps.
+
+### Transformation (`skills/transformation/`)
+
+- `magic-etl` — Create, update, and execute Magic ETL dataflows programmatically via API and CLI. Covers DAG-based JSON dataflow definitions, input/transform/output node wiring, and execution lifecycle.
+
+### Data Generation (`skills/datagen/`)
+
+- `domo-data-generator` — Generate realistic sample datasets and upload to Domo. Covers connector-style schema definitions, entity pools, rolling dates, and catalog management.
+
+### Administration (`skills/administration/`)
+
+- `workspaces` — Domo workspace and instance administration patterns.
 
 ## Repository Structure
 
 ```text
 skills/
+├── administration/
+│   └── workspaces/SKILL.md
 ├── apps/
 │   ├── appdb/SKILL.md
 │   ├── dataset-query/SKILL.md
 │   ├── domo-js/SKILL.md
 │   └── ...
+├── cli/
+│   ├── appdb-collection-create/SKILL.md
+│   ├── code-engine-create/SKILL.md
+│   ├── code-engine-update/SKILL.md
+│   └── community-cli-howto/SKILL.md
+├── connectors/
+│   ├── connector-dev/SKILL.md
+│   ├── data-upload-java-cli/SKILL.md
+│   └── json-no-code-connector/SKILL.md
+├── datagen/
+│   └── domo-data-generator/SKILL.md
+├── documents/
+│   └── html-deck/SKILL.md
 ├── domo-everywhere/
 │   ├── edit-embed/SKILL.md
 │   ├── jsapi-filters/SKILL.md
 │   ├── programmatic-filters/SKILL.md
 │   └── embed-portal/SKILL.md
-├── connectors/
-│   └── connector-dev/SKILL.md
 ├── orchestrator-skills/
 │   └── basic-app-build/SKILL.md
-├── documents/
-│   └── html-deck/SKILL.md
-├── cli/
 ├── themes/
 │   └── domo-app-theme/SKILL.md
+├── transformation/
+│   └── magic-etl/SKILL.md
+└── visualization/
+    ├── app-studio/SKILL.md
+    ├── app-studio-pro-code/SKILL.md
+    └── card-creation/SKILL.md
 
 rules/
 ├── core-custom-apps-rule.md

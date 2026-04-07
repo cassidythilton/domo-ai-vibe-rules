@@ -26,7 +26,7 @@ Verified February 2026 against live Domo instance. All 207 chart types documente
 ## 1. CRUD Endpoints
 
 **Base URL**: `https://{instance}.domo.com/api`
-**Auth Header**: `X-DOMO-Developer-Token: {your_token}`
+**Auth Header**: `X-Domo-Authentication: {SID}` (preferred — use a session SID from `domo login` / ryuu token exchange) or `X-DOMO-Developer-Token: {your_token}` (fallback — some endpoints reject dev tokens; SID works universally)
 **Content-Type**: `application/json`
 
 | Operation | Method | Endpoint | Notes |
@@ -1172,6 +1172,71 @@ Interactive filter controls for dashboard interactivity.
 - `dropdown_label_text` / `dropdown_label_pos` -- Dropdown label config
 - `selector_fill_color` / `use_integers_only` -- Range selector config
 
+#### Selector Card Subscription Requirements
+
+**CRITICAL**: Selector cards MUST have a non-empty `big_number.columns` array. An empty `columns` array causes `400 {"message":"big_number subscription missing select columns"}`.
+
+For dropdown/checkbox/radio/slicer selectors, use `COUNT` aggregation on the filtering column:
+
+```python
+"big_number": {
+    "name": "big_number",
+    "columns": [{"column": "PlantName", "aggregation": "COUNT",
+                 "alias": "PlantName",
+                 "format": {"type": "abbreviated", "format": "#A"}}],
+    "filters": [],
+}
+```
+
+For date selectors, use `MAX` aggregation on the date column:
+
+```python
+"big_number": {
+    "name": "big_number",
+    "columns": [{"column": "OrderDate", "aggregation": "MAX",
+                 "alias": "OrderDate",
+                 "format": {"type": "abbreviated", "format": "#A"}}],
+    "filters": [],
+}
+```
+
+The `main` subscription provides the values for the selector:
+- Dropdown/checkbox/radio: `columns: [{"column": "PlantName", "mapping": "ITEM"}]` with `groupBy: [{"column": "PlantName"}]`
+- Date selector: `columns: [{"column": "OrderDate", "mapping": "ITEM"}]` with `groupBy: []` (empty)
+
+#### App Studio Filter Card Best Practices
+
+When used as page-level filters in App Studio, filter cards MUST be **extremely low-profile** — transparent background, no borders, minimal height. They are controls, not content, and should blend into the page without competing visually with heroes or charts.
+
+| Content property | Value | Why |
+|-----------------|-------|-----|
+| `hideSummary` | `true` | Hides the distracting count above the dropdown |
+| `hideMargins` | `true` | Removes internal padding for tight fit |
+| `fitToFrame` | `true` | Scales the control to fill its frame |
+| `hideTitle` | `true` | Hide card title — dropdown already renders its own field label. Avoids redundant/coded text. |
+| `hideDescription` | `true` | Not needed for filter controls |
+| `hideFooter` | `true` | Not needed for filter controls |
+| `hideTimeframe` | `true` | Not needed for filter controls |
+| `hideBorder` | `true` | Removes card border for seamless look |
+| `style` | `null` | **NO colored style.** Do NOT use `ca3` or any themed style. Transparent/default only. Colored backgrounds (green, blue, etc.) make filters visually polarizing. |
+
+Use standard template height of **6** (not 10) for minimal vertical footprint.
+
+#### Global Card Styling (MANDATORY)
+
+All cards in App Studio MUST follow the zero-chrome reference configuration. Apply via theme update:
+
+| Setting | Value | API property |
+|---------|-------|-------------|
+| Rounded corners | **0 px** | `borderRadius: 0` |
+| Border weight | **0 px** | `borderWidth: 0` |
+| Drop shadow | **None** | `dropShadow: 'NONE'` |
+| Card inner padding | **0 px** | `padding: {left:0, right:0, top:0, bottom:0}` |
+| Content spacing | **Nil** | `contentSpacing: None` |
+| Header bottom spacing | **0 px** | `headerBottomSpacing: 0` |
+
+These are applied globally to all card styles (ca1–ca8) via the theme `cards` array. See `app-studio` skill § "Card Styles" for the full implementation.
+
 ---
 
 ### 5.20 Text / Display (2 types)
@@ -1538,8 +1603,11 @@ curl -X DELETE "https://domo.domo.com/api/content/v1/cards/CARD_ID" \
 |--------|---------|
 | **Override values are strings** | Even booleans (`"true"`, `"false"`) and numbers (`"10"`) must be passed as strings in the overrides object. |
 | **UPDATE replaces entire definition** | The update endpoint does a full replacement. You must include ALL fields, not just the ones you want to change. Always read first, modify, then write back. |
+| **READ→WRITE format mismatches** | The READ endpoint returns simplified formats that the WRITE endpoint rejects. Fix before updating: `formulas` (read=`[]`, write=`{"dsUpdated":[],"dsDeleted":[],"card":[]}`), `conditionalFormats` (read=`[]`, write=`{"card":[],"datasource":[]}`), `annotations` (read=`[]`, write=`{"new":[],"modified":[],"deleted":[]}`), `segments` (read=`{"active":[],"definitions":[]}`, write=`{"active":[],"create":[],"update":[],"delete":[]}`). Also add missing fields (`title`, `description`, `noDateRange`), remove read-only fields (`modified`, `allowTableDrill`), and always provide `dataProvider.dataSourceId`. |
+| **SID auth works for v3 cards** | `X-Domo-Authentication: {SID}` works for all `/content/v3/cards/kpi` endpoints (create, read, update), not just `X-DOMO-Developer-Token`. |
 | **`groupBy` auto-generation** | Build `groupBy` from all ITEM and SERIES columns. Missing this causes charts to display incorrectly (no grouping = all values aggregated into one). |
 | **`big_number` auto-generation** | For most chart types, populate with the first VALUE column. **Exception: `badge_singlevalue`** — leave `columns: []` to avoid a duplicative summary number (the card itself is the number). |
+| **PoP cards need `dateRangeFilter`** | `badge_pop_*` cards show "0" comparison unless: (1) date column in `main.columns` with `mapping:"ITEM"`, `aggregation:"MAX"`; (2) `dateRangeFilter` on the `main` subscription with `dateTimeRange` and `periods`; (3) `time_period` subscription with the same date column. If `dateGrain` exists on the subscription, remove it before adding `periods` (they conflict: "Cannot save dategrain with periods"). |
 | **Workspace operations: one at a time** | When adding/removing cards from workspaces via `/nav/v1/workspaces/bulk/execute`, send one entity per request. Batch `contents` arrays cause HTTP 500. |
 | **`badge_line` workaround** | Use `badge_spark_line` for compact line charts or `badge_two_trendline` for full-featured line charts. Both are verified working. |
 | **Copy keeps same title** | `POST /content/v1/cards/:id/copy` duplicates everything including the title. Call update_card after to rename the copy. |
